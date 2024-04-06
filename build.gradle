@@ -1,0 +1,85 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath "gradle.plugin.com.github.johnrengelman:shadow:7.1.2"
+    }
+}
+
+plugins {
+    id 'java'
+}
+
+apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+group = 'club.hellin'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+    maven {
+        name = "spigotmc-repo"
+        url = "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
+    }
+    maven {
+        name = "sonatype"
+        url = "https://oss.sonatype.org/content/groups/public/"
+    }
+    maven {
+        name = "jitpack.io"
+        url = "https://jitpack.io"
+    }
+    maven { url "https://repo.codemc.org/repository/maven-public/" }
+    maven {
+        url = 'https://repo.extendedclip.com/content/repositories/placeholderapi/'
+    }
+}
+
+dependencies {
+    compileOnly "org.spigotmc:spigot-api:1.20-R0.1-SNAPSHOT"
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    implementation "de.tr7zw:item-nbt-api:2.12.3"
+    implementation files("C:\\Users\\josep\\Desktop\\Minigames\\drink\\target\\drink-1.0.5-shaded.jar")
+    implementation "com.github.Exlll.ConfigLib:configlib-core:v4.2.0"
+    implementation "com.github.Exlll.ConfigLib:configlib-paper:v4.2.0"
+    implementation "com.github.Exlll.ConfigLib:configlib-yaml:v4.2.0"
+    compileOnly "com.github.decentsoftware-eu:decentholograms:2.8.6"
+    implementation group: 'org.json', name: 'json', version: '20240303'
+    compileOnly 'me.clip:placeholderapi:2.11.4'
+}
+
+shadowJar {
+    relocate 'de.tr7zw.changeme.nbtapi', 'club.hellin.forceblocks.de.tr7zw.3_0_0.nbtapi'
+
+    minimize()
+}
+
+def targetJavaVersion = 8
+java {
+    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
+    if (JavaVersion.current() < javaVersion) {
+        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
+        options.release = targetJavaVersion
+    }
+}
+
+processResources {
+    def props = [version: version]
+    inputs.properties props
+    filteringCharset 'UTF-8'
+    filesMatching('plugin.yml') {
+        expand props
+    }
+}

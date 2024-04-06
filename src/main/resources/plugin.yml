@@ -1,0 +1,12 @@
+name: ForceBlocks
+version: '${version}'
+main: club.hellin.forceblocks.Main
+api-version: 1.13
+load: POSTWORLD
+
+authors:
+  - Hellin
+
+softdepend:
+  - DecentHolograms
+  - PlaceholderAPI
