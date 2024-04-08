@@ -169,7 +169,7 @@ public final class ForceBlock implements ForceBlockBase {
             Location location = entity.getLocation();
             location = location.getBlock().getLocation();
 
-            if (!this.getSphere().contains(location))
+            if (location.distance(this.getLocation()) > this.getConfig().getRadius())
                 continue;
 
             switch (this.config.getMode()) {
@@ -189,6 +189,9 @@ public final class ForceBlock implements ForceBlockBase {
     @Override
     public void displayParticles() {
         final List<Location> blocks = this.getSphere();
+
+        if (!this.particleTasks.isEmpty())
+            return;
 
         if (blocks.isEmpty())
             return;
@@ -211,6 +214,7 @@ public final class ForceBlock implements ForceBlockBase {
             public void run() {
                 if (index >= loopSize) {
                     super.cancel();
+                    particleTasks.remove(this);
                     return;
                 }
 
@@ -227,6 +231,7 @@ public final class ForceBlock implements ForceBlockBase {
             public void run() {
                 if (index < 0) {
                     super.cancel();
+                    particleTasks.remove(this);
                     return;
                 }
 

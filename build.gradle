@@ -51,6 +51,7 @@ dependencies {
     compileOnly "com.github.decentsoftware-eu:decentholograms:2.8.6"
     implementation group: 'org.json', name: 'json', version: '20240303'
     compileOnly 'me.clip:placeholderapi:2.11.4'
+    implementation 'com.github.patheloper.pathetic:pathetic-mapping:2.4.1'
 }
 
 shadowJar {

@@ -65,15 +65,11 @@ public final class ForceBlockManager extends ComponentManager<ForceBlock> {
         final List<ForceBlock> forceBlocks = new ArrayList<>();
         location = location.getBlock().getLocation();
 
-        final Location finalLocation = location;
-
         for (final ForceBlock block : super.get()) {
-            final List<Location> sphere = block.getSphere();
-
             if (!location.getWorld().equals(block.getLocation().getWorld()))
                 continue;
 
-            if (!sphere.stream().anyMatch(loc -> loc.distance(finalLocation) < 1.5))
+            if (location.distance(block.getLocation()) > block.getConfig().getRadius())
                 continue;
 
             forceBlocks.add(block);

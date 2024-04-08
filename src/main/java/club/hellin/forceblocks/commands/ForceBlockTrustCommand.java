@@ -9,7 +9,14 @@ import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public final class ForceBlockTrustCommand {
+    private final Map<UUID, Long> ranMap = new HashMap<>();
+
     @Command(name = "", desc = "Toggle trust on a player to your Force Block protected land", usage = "<player>")
     public void toggleTrust(final @Sender CommandSender sender, final Player toTrust) {
         if (!(sender instanceof Player)) {
@@ -18,9 +25,21 @@ public final class ForceBlockTrustCommand {
         }
 
         final Player player = (Player) sender;
+        final UUID uuid = player.getUniqueId();
         final Location loc = player.getLocation();
+        final long now = Instant.now().getEpochSecond();
+
+        final long then = this.ranMap.getOrDefault(uuid, 0L);
+        final long diff = now - then;
+
+        if (diff < 2) {
+            player.sendMessage(ChatColor.RED + "Please wait a bit before doing this.");
+            return;
+        }
 
         final ForceBlock block = ForceBlockManager.getInstance().getClosestForceBlock(loc, player);
+
+        this.ranMap.put(uuid, now);
 
         if (block == null) {
             player.sendMessage(ChatColor.RED + "It does not appear that you are within the radius of any existing Force Blocks owned by you.");
