@@ -141,7 +141,7 @@ public final class ForceBlock implements ForceBlockBase {
         final Location loc = this.getLocation();
         final int radius = this.config.getRadius() * 2;
 
-        for (final Entity entity : loc.getWorld().getNearbyEntities(loc, radius, radius / 2, radius)) {
+        for (Entity entity : loc.getWorld().getNearbyEntities(loc, radius, radius / 2, radius)) {
             if (!(entity instanceof Projectile) && !(entity instanceof Monster) && !(entity instanceof Player))
                 continue;
 
@@ -171,6 +171,9 @@ public final class ForceBlock implements ForceBlockBase {
 
             if (location.distance(this.getLocation()) > this.getConfig().getRadius())
                 continue;
+
+            if (entity.isInsideVehicle())
+                entity = entity.getVehicle();
 
             switch (this.config.getMode()) {
                 case MAGNET: {
