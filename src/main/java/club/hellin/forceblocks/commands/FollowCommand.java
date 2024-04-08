@@ -2,12 +2,14 @@ package club.hellin.forceblocks.commands;
 
 import club.hellin.forceblocks.Main;
 import com.jonahseguin.drink.annotation.Command;
-import com.jonahseguin.drink.annotation.OptArg;
 import com.jonahseguin.drink.annotation.Require;
 import com.jonahseguin.drink.annotation.Sender;
 import lombok.Getter;
 import lombok.Setter;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -16,7 +18,6 @@ import org.bukkit.util.Vector;
 import org.patheloper.api.pathing.Pathfinder;
 import org.patheloper.api.pathing.result.Path;
 import org.patheloper.api.pathing.strategy.strategies.JumpablePathfinderStrategy;
-import org.patheloper.api.pathing.strategy.strategies.PlayerWalkableStrategy;
 import org.patheloper.api.wrapper.PathPosition;
 import org.patheloper.mapping.bukkit.BukkitMapper;
 

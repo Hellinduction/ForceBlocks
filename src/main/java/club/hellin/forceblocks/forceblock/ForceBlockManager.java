@@ -57,7 +57,7 @@ public final class ForceBlockManager extends ComponentManager<ForceBlock> {
 
         Bukkit.getScheduler().runTaskTimer(Main.instance, () -> {
             for (final ForceBlock block : super.get())
-                block.everyTick();
+                block.tick();
         }, 0L, 1L);
     }
 

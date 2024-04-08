@@ -90,13 +90,14 @@ public final class ProjectileAimbotCommand implements Listener {
             return;
         }
 
-        sender.sendMessage(ChatColor.RED + "Toggled path finding off.");
+        sender.sendMessage(ChatColor.GREEN + "Toggled path finding off.");
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onProjectileLaunch(final ProjectileLaunchEvent e) {
         final Projectile projectile = e.getEntity();
         final double speed = projectile.getVelocity().length();
+        final Vector originalVelocity = projectile.getVelocity();
 
         if (projectile instanceof EnderPearl)
             return;
@@ -112,8 +113,11 @@ public final class ProjectileAimbotCommand implements Listener {
         if (!this.toggledOn.contains(uuid))
             return;
 
-        if (this.pathFind)
+        if (this.pathFind) {
             projectile.setVelocity(projectile.getVelocity().multiply(0.4));
+//            projectile.setVelocity(new Vector());
+//            projectile.setGravity(false);
+        }
 
         final Entity target = this.getTargetEntity(projectile, shooter);
 
@@ -153,22 +157,22 @@ public final class ProjectileAimbotCommand implements Listener {
                     return;
                 }
 
-                pushTowards(projectile, target, speed);
+                pushTowards(projectile, target, speed, originalVelocity);
             }
         }.runTaskTimer(Main.instance, 0L, 1L);
     }
 
-    private void pushTowards(final Projectile projectile, final Entity target, final double speed) {
+    private void pushTowards(final Projectile projectile, final Entity target, final double speed, final Vector originalVelocity) {
         Location targetLoc;
         if (target instanceof Player)
             targetLoc = ((Player) target).getEyeLocation();
         else
             targetLoc = target.getLocation().add(0, target.getHeight() - 0.3, 0);
 
-        this.pushTowards(projectile, targetLoc, speed);
+        this.pushTowards(projectile, targetLoc, speed, originalVelocity);
     }
 
-    private void pushTowards(final Projectile projectile, final Location targetLoc, final double speed) {
+    private void pushTowards(final Projectile projectile, final Location targetLoc, final double speed, final Vector originalVelocity) {
         final Location nearbyLoc = projectile.getLocation();
 
         if (nearbyLoc.distance(targetLoc) < 2 || !this.pathFind) {
@@ -195,7 +199,7 @@ public final class ProjectileAimbotCommand implements Listener {
             final Path path = result.getPath();
             final Location target = BukkitMapper.toLocation(path.getEnd());
 
-            if (this.floorLocation(targetLoc).equals(this.floorLocation(target)) || this.indexMap.getOrDefault(projectile, 0) < 5) {
+            if (this.floorLocation(targetLoc).equals(this.floorLocation(target)) || this.indexMap.getOrDefault(projectile, 0) < path.length() / 1.5) {
                 this.handlePath(projectile, speed, result);
                 return;
             }
@@ -206,6 +210,13 @@ public final class ProjectileAimbotCommand implements Listener {
 
         pathfinder.findPath(start, end, new ArrowPathfinderStrategy(targetLoc))
                 .thenAccept(pathfinderResult -> {
+//                    projectile.setGravity(true);
+//                    projectile.setVelocity(originalVelocity.multiply(0.4));
+//                    if (!pathfinderResult.successful()) {
+//                        projectile.remove();
+//                        return;
+//                    }
+
                     resultMap.put(projectile, pathfinderResult);
                     this.indexMap.remove(projectile);
 

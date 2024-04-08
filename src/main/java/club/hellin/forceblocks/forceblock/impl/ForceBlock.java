@@ -137,9 +137,9 @@ public final class ForceBlock implements ForceBlockBase {
     }
 
     @Override
-    public void everyTick() {
+    public void tick() {
         final Location loc = this.getLocation();
-        final int radius = this.config.getRadius() * 2;
+        final int radius = this.config.getRadius() * 2; // Times by 2 to ensure we capture all players within the sphere
 
         for (Entity entity : loc.getWorld().getNearbyEntities(loc, radius, radius / 2, radius)) {
             if (!(entity instanceof Projectile) && !(entity instanceof Monster) && !(entity instanceof Player))
@@ -279,7 +279,7 @@ public final class ForceBlock implements ForceBlockBase {
 
     @Override
     public boolean isOwner(final UUID uuid) {
-        return this.config.getOwner().equals(uuid);
+        return this.config.getOwner().equals(uuid) || Main.instance.getBypassForceBlockCommand().getBypassList().contains(uuid);
     }
 
     public static String convertLocationToFileName(final Location loc) {

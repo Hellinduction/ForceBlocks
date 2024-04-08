@@ -22,7 +22,7 @@ public interface ForceBlockBase {
 
     void everySecond();
 
-    void everyTick();
+    void tick();
 
     void displayParticles();
 
