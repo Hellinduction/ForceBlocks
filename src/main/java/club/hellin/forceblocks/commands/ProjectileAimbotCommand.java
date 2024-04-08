@@ -371,7 +371,7 @@ public final class ProjectileAimbotCommand implements Listener {
                     continue;
 
                 // Check if there's a clear path to the entity using Bukkit's ray tracing
-                if (this.isPathObstructed(projectile, projectile.getLocation(), entity.getLocation()))
+                if (!this.pathFind && this.isPathObstructed(projectile, projectile.getLocation(), entity.getLocation()))
                     continue;
 
                 final double dist = entity.getLocation().distance(loc);
@@ -391,7 +391,7 @@ public final class ProjectileAimbotCommand implements Listener {
                 if (entity instanceof Player && (((Player) entity).getGameMode() == GameMode.SPECTATOR || isVanished((Player) entity)))
                     continue;
 
-                if (this.isPathObstructed(projectile, projectile.getLocation(), entity.getLocation()))
+                if (!this.pathFind && this.isPathObstructed(projectile, projectile.getLocation(), entity.getLocation()))
                     continue;
 
                 final double fieldOfViewAngle = Math.toRadians(FIELD_OF_VIEW);

@@ -1,9 +1,6 @@
 package club.hellin.forceblocks;
 
-import club.hellin.forceblocks.commands.ApplyForceBlockCommand;
-import club.hellin.forceblocks.commands.ForceBlockTrustCommand;
-import club.hellin.forceblocks.commands.ProjectileAimbotCommand;
-import club.hellin.forceblocks.commands.ReachCommand;
+import club.hellin.forceblocks.commands.*;
 import club.hellin.forceblocks.forceblock.ForceBlockManager;
 import club.hellin.forceblocks.listeners.ForceBlockListeners;
 import club.hellin.forceblocks.utils.papi.PapiInit;
@@ -25,6 +22,7 @@ public final class Main extends JavaPlugin {
     public static Main instance;
 
     private Pathfinder pathfinder;
+    private Pathfinder playerPathfinder;
 
     public Main() {
         instance = this;
@@ -33,12 +31,20 @@ public final class Main extends JavaPlugin {
     @Override
     public void onEnable() {
         PatheticMapper.initialize(instance);
+
         this.pathfinder = PatheticMapper.newPathfinder(PathingRuleSet.createAsyncRuleSet()
                 .withAllowingFailFast(true)
                 .withAllowingFallback(true)
                 .withLoadingChunks(true)
                 .withAllowingDiagonal(false)
                 .withHeuristicWeights(HeuristicWeights.create(0.6, 0.15, 0.2, 0.3)));
+
+        this.playerPathfinder = PatheticMapper.newPathfinder(PathingRuleSet.createAsyncRuleSet()
+                .withAllowingFailFast(false)
+                .withAllowingFallback(true)
+                .withLoadingChunks(true)
+                .withAllowingDiagonal(false)
+                .withHeuristicWeights(HeuristicWeights.DIRECT_PATH_WEIGHTS));
 
         this.registerListeners();
         this.registerCommands();
@@ -61,6 +67,7 @@ public final class Main extends JavaPlugin {
         final CommandService service = Drink.get(instance);
 
         service.register(new ApplyForceBlockCommand(), "applyforceblock");
+        service.register(new FollowCommand(), "follow");
         service.register(new ForceBlockTrustCommand(), "forceblocktrust");
         service.register(new ProjectileAimbotCommand(), "projectileaimbot");
         service.register(new ReachCommand(), "reach");
