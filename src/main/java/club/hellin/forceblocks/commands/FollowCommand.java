@@ -74,6 +74,9 @@ public final class FollowCommand {
             final Location from = follower.getLocation();
             final Location target = following.getLocation();
 
+            if (!from.getWorld().equals(target.getWorld()))
+                continue;
+
             if (from.distance(target) < STOP_FOLLOWING_DISTANCE)
                 continue;
 
@@ -146,7 +149,7 @@ public final class FollowCommand {
 
     @Command(name = "", desc = "Use path finding to follow a player", usage = "<player>")
     @Require(PERMISSION)
-    public void follow(final @Sender CommandSender sender, final @OptArg Player toFollow) {
+    public void follow(final @Sender CommandSender sender, final Player toFollow) {
         if (!(sender instanceof Player)) {
             sender.sendMessage(ChatColor.RED + "You must be a player to use this command.");
             return;
@@ -156,12 +159,12 @@ public final class FollowCommand {
         final UUID uuid = player.getUniqueId();
         final UUID toFollowUuid = toFollow.getUniqueId();
 
-        if (toFollowUuid.equals(uuid) && !this.followMap.containsKey(uuid)) {
-            player.sendMessage(ChatColor.RED + "Specify a player to follow.");
+        if (toFollowUuid.equals(uuid)) {
+            player.sendMessage(ChatColor.RED + "You cannot follow yourself.");
             return;
         }
 
-        if (toFollowUuid.equals(uuid)) {
+        if (this.followMap.containsKey(uuid)) {
             final FollowData data = this.followMap.remove(uuid);
             final UUID followingUuid = data.getFollowing();
             final OfflinePlayer following = Bukkit.getOfflinePlayer(followingUuid);
@@ -173,7 +176,7 @@ public final class FollowCommand {
             return;
         }
 
-        if (toFollow.getLocation().distance(player.getLocation()) > MAX_RADIUS) {
+        if (!toFollow.getWorld().equals(player.getWorld()) || toFollow.getLocation().distance(player.getLocation()) > MAX_RADIUS) {
             player.sendMessage(ChatColor.RED + "That player is too far away to start following them.");
             return;
         }
