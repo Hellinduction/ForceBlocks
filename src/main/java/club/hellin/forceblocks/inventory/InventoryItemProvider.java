@@ -1,0 +1,7 @@
+package club.hellin.forceblocks.inventory;
+
+import org.bukkit.inventory.ItemStack;
+
+public interface InventoryItemProvider {
+    ItemStack provide();
+}

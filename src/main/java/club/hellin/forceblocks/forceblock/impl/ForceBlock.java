@@ -3,6 +3,9 @@ package club.hellin.forceblocks.forceblock.impl;
 import club.hellin.forceblocks.Main;
 import club.hellin.forceblocks.forceblock.ForceBlockBase;
 import club.hellin.forceblocks.forceblock.ForceBlockManager;
+import club.hellin.forceblocks.inventory.AbstractInventory;
+import club.hellin.forceblocks.inventory.InventoryManager;
+import club.hellin.forceblocks.inventory.impl.ForceBlockInventory;
 import club.hellin.forceblocks.listeners.ForceBlockListeners;
 import club.hellin.forceblocks.utils.WorldEditUtils;
 import de.exlll.configlib.ConfigLib;
@@ -14,6 +17,8 @@ import lombok.Getter;
 import lombok.ToString;
 import org.bukkit.*;
 import org.bukkit.entity.*;
+import org.bukkit.entity.minecart.ExplosiveMinecart;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -28,6 +33,7 @@ public final class ForceBlock implements ForceBlockBase {
     private static final YamlConfigurationProperties PROPERTIES = ConfigLib.BUKKIT_DEFAULT_PROPERTIES.toBuilder().build();
     private static final double PUSH_DISTANCE = 1.2D;
     private static final double PULL_DISTANCE = 1.2D;
+    private static final int MAX_SPHERE_RADIUS = 100; // This is only for the particle sphere
     public static final File DIR = new File(Main.instance.getDataFolder(), "blocks");
 
     private File configFile;
@@ -94,7 +100,9 @@ public final class ForceBlock implements ForceBlockBase {
     }
 
     @Override
-    public void delete() {
+    public void delete(final Player player) {
+        this.closeAll();
+
         this.deleted = true;
 
         if (this.hologram != null) {
@@ -109,6 +117,34 @@ public final class ForceBlock implements ForceBlockBase {
         ForceBlockManager.getInstance().remove(this);
     }
 
+    public void closeAll() {
+        final List<AbstractInventory> inventories = InventoryManager.getInstance().getInventories(this);
+
+        for (final AbstractInventory inventory : inventories) {
+            for (final AbstractInventory.OpenSession session : inventory.getOpen().values()) {
+                final Player p = session.getPlayer();
+
+                if (p == null || !p.isOnline())
+                    continue;
+
+                p.closeInventory();
+            }
+        }
+    }
+
+    public void close(final Player player) {
+        final UUID uuid = player.getUniqueId();
+        final List<AbstractInventory> inventories = InventoryManager.getInstance().getInventories(this);
+
+        for (final AbstractInventory inventory : inventories) {
+            if (!inventory.getOpen().keySet().contains(uuid))
+                continue;
+
+            player.closeInventory();
+            break;
+        }
+    }
+
     @Override
     public void save() {
         final Class<ForceBlockConfig> configClass = (Class<ForceBlockConfig>) this.getConfig().getClass();
@@ -118,6 +154,16 @@ public final class ForceBlock implements ForceBlockBase {
             YamlConfigurations.update(config.toPath(), configClass, PROPERTIES);
 
         YamlConfigurations.save(config.toPath(), configClass, configClass.cast(this.getConfig()), PROPERTIES);
+    }
+
+    @Override
+    public void openGui(final Player player) {
+        player.closeInventory();
+
+        final ForceBlockInventory forceBlockInventory = (ForceBlockInventory) InventoryManager.getInstance().getInventory("FORCE_BLOCK");
+        final Inventory inventory = forceBlockInventory.createInventory(player, this);
+
+        player.openInventory(inventory);
     }
 
     @Override
@@ -136,13 +182,32 @@ public final class ForceBlock implements ForceBlockBase {
         ++this.second;
     }
 
+    private boolean allowEntity(final Entity entity) {
+        if (entity instanceof Projectile)
+            return true;
+
+        if (entity instanceof Monster)
+            return true;
+
+        if (entity instanceof Player && this.config.isAffectPlayers())
+            return true;
+
+        if (entity instanceof Mob && this.config.isAffectNonHostileMobs())
+            return true;
+
+        if ((entity instanceof TNTPrimed || entity instanceof Explosive || entity instanceof ExplosiveMinecart) && this.config.isAffectExplosives())
+            return true;
+
+        return false;
+    }
+
     @Override
     public void tick() {
         final Location loc = this.getLocation();
         final int radius = this.config.getRadius() * 2; // Times by 2 to ensure we capture all players within the sphere
 
         for (Entity entity : loc.getWorld().getNearbyEntities(loc, radius, radius / 2, radius)) {
-            if (!(entity instanceof Projectile) && !(entity instanceof Monster) && !(entity instanceof Player))
+            if (!this.allowEntity(entity))
                 continue;
 
             final ForceBlock forceBlock = ForceBlockManager.getInstance().getClosestForceBlock(entity.getLocation());
@@ -152,6 +217,7 @@ public final class ForceBlock implements ForceBlockBase {
             if (this.isPermitted(entity.getUniqueId()))
                 continue;
 
+            // Deflecting projectiles
             if (entity instanceof Projectile) {
                 final Projectile projectile = (Projectile) entity;
                 final ProjectileSource source = projectile.getShooter();
@@ -263,17 +329,25 @@ public final class ForceBlock implements ForceBlockBase {
 
     @Override
     public void unTrust(final UUID uuid) {
+        final Player player = Bukkit.getPlayer(uuid);
+
+        if (player != null && player.isOnline())
+            this.close(player);
+
         this.getTrusted().remove(uuid);
         this.save();
     }
 
     @Override
     public List<Location> getSphere() {
+        final int configRadius = this.getConfig().getRadius();
+        final int radius = configRadius > MAX_SPHERE_RADIUS ? MAX_SPHERE_RADIUS : configRadius;
+
         if (this.sphere != null)
             return this.sphere;
 
         final Location center = this.getLocation();
-        final List<Location> sphere = WorldEditUtils.makeSphere(center.getWorld(), center.toVector(), this.config.getRadius());
+        final List<Location> sphere = WorldEditUtils.makeSphere(center.getWorld(), center.toVector(), radius);
         return this.sphere = sphere;
     }
 

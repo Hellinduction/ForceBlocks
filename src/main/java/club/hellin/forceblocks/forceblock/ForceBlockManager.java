@@ -142,4 +142,9 @@ public final class ForceBlockManager extends ComponentManager<ForceBlock> {
 
         return null;
     }
+
+    public void closeAllInventories() {
+        for (final ForceBlock block : super.get())
+            block.closeAll();
+    }
 }

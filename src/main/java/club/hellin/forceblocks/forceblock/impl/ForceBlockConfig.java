@@ -28,4 +28,13 @@ public final class ForceBlockConfig {
 
     @Comment("Which mode this Force Block is in (FORCE_FIELD, MAGNET)")
     private ForceMode mode = ForceMode.FORCE_FIELD;
+
+    @Comment("Should this Force Block affect players?")
+    private boolean affectPlayers = true;
+
+    @Comment("Should this Force Block affect non hostile mobs?")
+    private boolean affectNonHostileMobs = false;
+
+    @Comment("Should this Force Block affect explosives?")
+    private boolean affectExplosives = true;
 }

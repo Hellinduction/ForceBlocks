@@ -6,6 +6,7 @@ import com.jonahseguin.drink.annotation.Command;
 import com.jonahseguin.drink.annotation.Sender;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -46,6 +47,10 @@ public final class ForceBlockTrustCommand {
             return;
         }
 
+        toggleTrust(block, player, toTrust);
+    }
+
+    public static void toggleTrust(final ForceBlock block, final Player player, final OfflinePlayer toTrust) {
         if (!block.isOwner(player)) {
             player.sendMessage(ChatColor.RED + "You are not the owner of this Force Block.");
             return;
@@ -58,11 +63,11 @@ public final class ForceBlockTrustCommand {
 
         if (block.getTrusted().contains(toTrust.getUniqueId())) {
             block.unTrust(toTrust);
-            player.sendMessage(ChatColor.GREEN + String.format("Untrusted %s%s to your Force Block!", toTrust.getDisplayName(), ChatColor.GREEN));
+            player.sendMessage(ChatColor.GREEN + String.format("Untrusted %s to your Force Block!", toTrust.getName()));
             return;
         }
 
         block.trust(toTrust);
-        player.sendMessage(ChatColor.GREEN + String.format("Trusted %s%s to your Force Block!", toTrust.getDisplayName(), ChatColor.GREEN));
+        player.sendMessage(ChatColor.GREEN + String.format("Trusted %s to your Force Block!", toTrust.getName()));
     }
 }

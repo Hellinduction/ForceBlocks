@@ -2,7 +2,9 @@ package club.hellin.forceblocks;
 
 import club.hellin.forceblocks.commands.*;
 import club.hellin.forceblocks.forceblock.ForceBlockManager;
+import club.hellin.forceblocks.inventory.InventoryManager;
 import club.hellin.forceblocks.listeners.ForceBlockListeners;
+import club.hellin.forceblocks.listeners.InventoryListeners;
 import club.hellin.forceblocks.utils.papi.PapiInit;
 import com.jonahseguin.drink.CommandService;
 import com.jonahseguin.drink.Drink;
@@ -51,17 +53,22 @@ public final class Main extends JavaPlugin {
         this.registerCommands();
 
         ForceBlockManager.getInstance().init();
+        InventoryManager.getInstance().init();
+
         PapiInit.initPapi();
     }
 
     @Override
     public void onDisable() {
         PatheticMapper.shutdown();
+        ForceBlockManager.getInstance().closeAllInventories();
     }
 
     private void registerListeners() {
         final PluginManager manager = Bukkit.getPluginManager();
+
         manager.registerEvents(new ForceBlockListeners(), instance);
+        manager.registerEvents(new InventoryListeners(), instance);
     }
 
     private void registerCommands() {
@@ -73,6 +80,7 @@ public final class Main extends JavaPlugin {
         service.register(new ProjectileAimbotCommand(), "projectileaimbot");
         service.register(new ReachCommand(), "reach");
         service.register(this.bypassForceBlockCommand = new BypassForceBlockCommand(), "bypassforceblock");
+//        service.register(new OpenInventoryCommand(), "openinventory");
 
         service.registerCommands();
     }

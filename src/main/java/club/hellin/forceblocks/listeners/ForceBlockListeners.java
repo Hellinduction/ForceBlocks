@@ -4,6 +4,7 @@ import club.hellin.forceblocks.Main;
 import club.hellin.forceblocks.commands.ApplyForceBlockCommand;
 import club.hellin.forceblocks.forceblock.ForceBlockManager;
 import club.hellin.forceblocks.forceblock.impl.ForceBlock;
+import club.hellin.forceblocks.forceblock.impl.ForceBlockConfig;
 import club.hellin.forceblocks.forceblock.impl.ForceMode;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 import org.bukkit.*;
@@ -28,8 +29,10 @@ import java.util.stream.Collectors;
 public final class ForceBlockListeners implements Listener {
     private static final String NBT_TRUSTED_TAG = "force_block_trusted";
     private static final String NBT_MODE_TAG = "force_block_mode";
+    private static final String NBT_AFFECT_PLAYERS_TAG = "force_block_affect_players";
+    private static final String NBT_AFFECT_NON_HOSTILE_MOBS_TAG = "force_block_affect_non_hostile_mobs";
+    private static final String NBT_AFFECT_EXPLOSIVES_TAG = "force_block_affect_explosives";
 
-    private final Map<UUID, Long> lastChangedMode = new HashMap<>();
     private final Map<UUID, Long> lastInteraction = new HashMap<>();
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -74,6 +77,20 @@ public final class ForceBlockListeners implements Listener {
 
             forceBlock.save();
         }
+
+        if (nbt.hasTag(NBT_AFFECT_PLAYERS_TAG) && nbt.hasTag(NBT_AFFECT_NON_HOSTILE_MOBS_TAG) && nbt.hasTag(NBT_AFFECT_EXPLOSIVES_TAG)) {
+            final boolean affectPlayers = nbt.getBoolean(NBT_AFFECT_PLAYERS_TAG);
+            final boolean affectNonHostileMobs = nbt.getBoolean(NBT_AFFECT_NON_HOSTILE_MOBS_TAG);
+            final boolean affectExplosives = nbt.getBoolean(NBT_AFFECT_EXPLOSIVES_TAG);
+
+            final ForceBlockConfig config = forceBlock.getConfig();
+
+            config.setAffectPlayers(affectPlayers);
+            config.setAffectNonHostileMobs(affectNonHostileMobs);
+            config.setAffectExplosives(affectExplosives);
+
+            forceBlock.save();
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -101,8 +118,15 @@ public final class ForceBlockListeners implements Listener {
 
         final JSONArray array = new JSONArray(forceBlock.getConfig().getTrusted());
         final String json = array.toString();
+
+        final ForceBlockConfig config = forceBlock.getConfig();
+
         nbt.setString(NBT_TRUSTED_TAG, json);
-        nbt.setString(NBT_MODE_TAG, forceBlock.getConfig().getMode().name());
+        nbt.setString(NBT_MODE_TAG, config.getMode().name());
+
+        nbt.setBoolean(NBT_AFFECT_PLAYERS_TAG, config.isAffectPlayers());
+        nbt.setBoolean(NBT_AFFECT_NON_HOSTILE_MOBS_TAG, config.isAffectNonHostileMobs());
+        nbt.setBoolean(NBT_AFFECT_EXPLOSIVES_TAG, config.isAffectExplosives());
 
         item = nbt.getItem();
 
@@ -116,7 +140,7 @@ public final class ForceBlockListeners implements Listener {
         player.updateInventory();
 
         e.setDropItems(false);
-        forceBlock.delete();
+        forceBlock.delete(player);
     }
 
 //    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -154,13 +178,6 @@ public final class ForceBlockListeners implements Listener {
         if (action != Action.RIGHT_CLICK_BLOCK)
             return;
 
-        final Block block = e.getClickedBlock();
-        final Location location = block.getLocation();
-        final ForceBlock forceBlock = ForceBlockManager.getInstance().getForceBlock(location);
-
-        if (forceBlock == null)
-            return;
-
         final long now = Instant.now().getEpochSecond();
         final long lastInteraction = this.lastInteraction.getOrDefault(player.getUniqueId(), 0L);
         final long timeSince = now - lastInteraction;
@@ -170,25 +187,19 @@ public final class ForceBlockListeners implements Listener {
 
         this.lastInteraction.put(player.getUniqueId(), now);
 
+        final Block block = e.getClickedBlock();
+        final Location location = block.getLocation();
+        final ForceBlock forceBlock = ForceBlockManager.getInstance().getForceBlock(location);
+
+        if (forceBlock == null)
+            return;
+
         if (!forceBlock.isPermitted(player)) {
-            player.sendMessage(ChatColor.RED + "You are not permitted to change the mode of this Force Block.");
+            player.sendMessage(ChatColor.RED + "You are not permitted to interact with this Force Block.");
             return;
         }
 
-        final long then = this.lastChangedMode.getOrDefault(player.getUniqueId(), 0L);
-        final long diff = now - then;
-
-        if (diff < 2)
-            return;
-
-        final ForceMode newMode = forceBlock.getConfig().getMode().next();
-
-        forceBlock.getConfig().setMode(newMode);
-        forceBlock.save();
-
-        this.lastChangedMode.put(player.getUniqueId(), now);
-
-        player.sendMessage(ChatColor.GREEN + String.format("Set the mode of this Force Block to %s.", newMode.name()));
+        forceBlock.openGui(player);
     }
 
 //    private Location floorLocation(final Location location) {
