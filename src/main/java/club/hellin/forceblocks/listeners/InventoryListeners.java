@@ -3,6 +3,7 @@ package club.hellin.forceblocks.listeners;
 import club.hellin.forceblocks.inventory.AbstractInventory;
 import club.hellin.forceblocks.inventory.InventoryManager;
 import club.hellin.forceblocks.inventory.objects.InventoryClick;
+import club.hellin.forceblocks.inventory.type.VerifyInventory;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -84,8 +85,24 @@ public final class InventoryListeners implements Listener {
         if (inventory == null)
             return;
 
-        InventoryManager.getInstance().getLastInventoryMap().put(uuid, inventory);
+        InventoryManager.getInstance().getInventoryPathMap().put(uuid, InventoryManager.getInstance().getInventoryPathMap().getOrDefault(uuid, new InventoryManager.InventoryPath(uuid)));
+
+        final InventoryManager.InventoryPath path = InventoryManager.getInstance().getInventoryPathMap().get(uuid);
+
+        if (path == null)
+            return;
+
+        final AbstractInventory lastInventory = path.getPrevious();
+
         inventory.close(player);
+
+        if (inventory instanceof VerifyInventory || lastInventory instanceof VerifyInventory)
+            return;
+
+        if (lastInventory != null && lastInventory.equals(inventory))
+            return;
+
+        path.addInventory(inventory);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -94,12 +111,16 @@ public final class InventoryListeners implements Listener {
             return;
 
         final Player player = (Player) e.getPlayer();
+        final UUID uuid = player.getUniqueId();
 
         final InventoryView view = e.getView();
         final AbstractInventory inventory = InventoryManager.getInstance().getInventory(view);
 
         if (inventory == null)
             return;
+
+        if (inventory.isMainMenu())
+            InventoryManager.getInstance().getInventoryPathMap().remove(uuid);
 
         if (inventory.isOpen(player))
             return;

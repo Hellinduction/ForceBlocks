@@ -75,6 +75,10 @@ public abstract class AbstractInventory implements InventoryBase {
         return properties;
     }
 
+    public boolean isMainMenu() {
+        return this.getClass().getAnnotation(MainMenu.class) != null;
+    }
+
     @Override
     public int getSize(final Player player) {
         return DEFAULT_SIZE;
@@ -133,7 +137,12 @@ public abstract class AbstractInventory implements InventoryBase {
         final InventoryView view = player.getOpenInventory();
         final UUID uuid = player.getUniqueId();
 
-        final AbstractInventory lastInventory = InventoryManager.getInstance().getLastInventoryMap().get(uuid);
+        final InventoryManager.InventoryPath path = InventoryManager.getInstance().getInventoryPathMap().get(uuid);
+
+        if (path == null)
+            return;
+
+        final AbstractInventory lastInventory = path.previous();
         final AbstractInventory currentInventory = InventoryManager.getInstance().getInventory(view);
 
         if (lastInventory == null || currentInventory == null)

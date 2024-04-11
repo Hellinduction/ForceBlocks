@@ -8,6 +8,7 @@ import club.hellin.forceblocks.inventory.objects.Confirmation;
 import club.hellin.forceblocks.inventory.type.VerifyInventory;
 import club.hellin.forceblocks.utils.ComponentManager;
 import lombok.Getter;
+import lombok.ToString;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -19,9 +20,102 @@ import java.util.function.Consumer;
 
 @Getter
 public final class InventoryManager extends ComponentManager<AbstractInventory> {
+    @Getter
+    @ToString
+    public static final class InventoryPath {
+        private final UUID uuid;
+        private final List<AbstractInventory> path = new ArrayList<>();
+
+        private int pointer = 0;
+
+        public InventoryPath(final UUID uuid) {
+            this.uuid = uuid;
+        }
+
+        public void addInventory(final AbstractInventory inventory) {
+            if (this.get() != null && this.get().equals(inventory))
+                return;
+
+            this.path.add(inventory);
+            ++pointer;
+        }
+
+        /**
+         * Read only
+         * @return
+         */
+        public AbstractInventory get() {
+            if (!this.validate(this.pointer))
+                return null;
+
+            final AbstractInventory inventory = this.path.get(this.pointer);
+            return inventory;
+        }
+
+        /**
+         * Adjusts the pointer
+         * @return
+         */
+        public AbstractInventory next() {
+            final int next = ++this.pointer;
+
+            if (!this.validate(next))
+                return null;
+
+            final AbstractInventory inventory = this.path.get(next);
+            return inventory;
+        }
+
+        /**
+         * Adjusts the pointer
+         * @return
+         */
+        public AbstractInventory previous() {
+            final int previous = --this.pointer;
+
+            if (!this.validate(previous))
+                return null;
+
+            final AbstractInventory inventory = this.path.get(previous);
+            return inventory;
+        }
+
+        /**
+         * Read only
+         * @return
+         */
+        public AbstractInventory getNext() {
+            final int next = this.pointer + 1;
+
+            if (!this.validate(next))
+                return null;
+
+            final AbstractInventory inventory = this.path.get(next);
+            return inventory;
+        }
+
+        /**
+         * Read only
+         * @return
+         */
+        public AbstractInventory getPrevious() {
+            final int previous = this.pointer - 1;
+
+            if (!this.validate(previous))
+                return null;
+
+            final AbstractInventory inventory = this.path.get(previous);
+            return inventory;
+        }
+
+        private boolean validate(final int index) {
+            return index >= 0 && index < this.path.size();
+        }
+    }
+
     private static InventoryManager singletonInstance;
 
-    private final Map<UUID, AbstractInventory> lastInventoryMap = new HashMap<>();
+    private final Map<UUID, InventoryPath> inventoryPathMap = new HashMap<>();
 
     public static InventoryManager getInstance() {
         if (!(singletonInstance instanceof InventoryManager))

@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 @InventoryProperties(title = "&b&lForce Block")
+@MainMenu
 public final class ForceBlockInventory extends CaseByCaseInventory {
     @InventoryHandler(type = Material.STONE, name = "", switcher = true)
     public void switchMode(final InventoryClick click) {
