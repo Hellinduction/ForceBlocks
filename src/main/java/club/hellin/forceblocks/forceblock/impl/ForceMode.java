@@ -8,7 +8,8 @@ import org.bukkit.inventory.ItemStack;
 
 public enum ForceMode implements InventoryItemProvider {
     FORCE_FIELD,
-    MAGNET;
+    MAGNET,
+    OFF;
 
     public ForceMode next() {
         int nextIndex = (this.ordinal() + 1) % ForceMode.values().length;
@@ -23,7 +24,11 @@ public enum ForceMode implements InventoryItemProvider {
             }
 
             case MAGNET: {
-                return new ItemStackBuilder(Material.REDSTONE_BLOCK).addEnchant(Enchantment.KNOCKBACK).hideEnchants().setDisplayName("&7&lMode: &e&lMagnet").build();
+                return new ItemStackBuilder(Material.IRON_BLOCK).addEnchant(Enchantment.KNOCKBACK).hideEnchants().setDisplayName("&7&lMode: &e&lMagnet").build();
+            }
+
+            case OFF: {
+                return new ItemStackBuilder(Material.REDSTONE_BLOCK).addEnchant(Enchantment.KNOCKBACK).hideEnchants().setDisplayName("&7&lMode: &c&lOFF").build();
             }
 
             default: {

@@ -47,6 +47,42 @@ public final class ForceBlockSettingsInventory extends CaseByCaseInventory {
         block.save();
     }
 
+    @InventoryToggleHandler(name = "&bHostile Mobs")
+    public void toggleAffectHostileMobs(final InventoryClick click) {
+        final Player player = click.getWhoClicked();
+        final ForceBlock block = this.getForceBlock(player, true);
+
+        if (block == null)
+            return;
+
+        block.getConfig().setAffectHostileMobs(!block.getConfig().isAffectHostileMobs());
+        block.save();
+    }
+
+    @InventoryToggleHandler(name = "&bTrusted Players")
+    public void toggleAffectTrustedPlayers(final InventoryClick click) {
+        final Player player = click.getWhoClicked();
+        final ForceBlock block = this.getForceBlock(player, true);
+
+        if (block == null)
+            return;
+
+        block.getConfig().setAffectTrustedPlayers(!block.getConfig().isAffectTrustedPlayers());
+        block.save();
+    }
+
+    @InventoryToggleHandler(name = "&bProjectiles")
+    public void toggleAffectProjectiles(final InventoryClick click) {
+        final Player player = click.getWhoClicked();
+        final ForceBlock block = this.getForceBlock(player, true);
+
+        if (block == null)
+            return;
+
+        block.getConfig().setAffectProjectiles(!block.getConfig().isAffectProjectiles());
+        block.save();
+    }
+
     private ForceBlock getForceBlock(final Player player, final boolean sendFailure) {
         final ForceBlock forceBlock = super.getAttachment(player);
 
@@ -81,8 +117,25 @@ public final class ForceBlockSettingsInventory extends CaseByCaseInventory {
             case "EXPLOSIVES": {
                 return config.isAffectExplosives();
             }
+
+            case "HOSTILE_MOBS": {
+                return config.isAffectHostileMobs();
+            }
+
+            case "TRUSTED_PLAYERS": {
+                return config.isAffectTrustedPlayers();
+            }
+
+            case "PROJECTILES": {
+                return config.isAffectProjectiles();
+            }
         }
 
         return false;
+    }
+
+    @Override
+    public int getAddToSize() {
+        return 9; // Add extra row
     }
 }

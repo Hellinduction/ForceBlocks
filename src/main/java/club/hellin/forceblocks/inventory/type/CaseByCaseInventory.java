@@ -67,6 +67,10 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
         }
     }
 
+    public int getAddToSize() {
+        return 0;
+    }
+
     @ToString
     public static final class InventoryToggleItem extends InventoryItem {
         private final Method method;
@@ -178,7 +182,7 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
     public int getSize(final Player player) {
         int size = this.inventoryItemMap.size();
         int rows = (int) Math.ceil(size / 3.0);
-        return (rows * 9);
+        return (rows * 9) + this.getAddToSize();
     }
 
     public boolean isToggledOn(final Player player, final String rawName) {
@@ -211,6 +215,24 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
         return inventory;
     }
 
+    private boolean isBottomRowFree(final Player player, final Inventory inventory) {
+        final int size = this.getSize(player);
+
+        final int start = size - 9;
+        int nonAirCount = 0;
+
+        for (int i = start; i < size; ++i) {
+            final ItemStack item = inventory.getItem(i);
+
+            if (item == null || item.getType() == Material.AIR)
+                continue;
+
+            ++nonAirCount;
+        }
+
+        return nonAirCount == 0;
+    }
+
     @Override
     public void setItems(final Player player, final Inventory inventory) {
         inventory.clear();
@@ -218,7 +240,8 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
         int row;
         final int spacing = 4;
 
-        final int rows = this.getSize(player) / 9;
+        final int size = this.getSize(player);
+        final int rows = size / 9;
 
         for (row = 0; row < rows; ++row) {
             final int centerIndex = (row * 9) + 4;
@@ -228,6 +251,9 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
             final InventoryItem inventoryItem = this.getInventoryItem(centerIndex);
             final InventoryItem left = this.getInventoryItem(leftIndex);
             final InventoryItem right = this.getInventoryItem(rightIndex);
+
+            if (inventoryItem == null && left == null && right == null)
+                continue;
 
             if (left != null && inventoryItem == null) {
                 inventory.setItem(centerIndex, left.getItem(player));
@@ -254,6 +280,11 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
             inventory.setItem(centerIndex, inventoryItem.getItem(player));
             inventory.setItem(leftIndex, left.getItem(player));
             inventory.setItem(rightIndex, right.getItem(player));
+        }
+
+        if (this.isBottomRowFree(player, inventory)) {
+            final int mid = size - 5;
+            inventory.setItem(mid, super.getBackButton());
         }
     }
 

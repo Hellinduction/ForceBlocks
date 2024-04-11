@@ -85,6 +85,7 @@ public final class VerifyInventory extends AbstractInventory {
         inventory.clear();
 
         inventory.setItem(2, this.getConfirm());
+        inventory.setItem(4, super.getBackButton());
         inventory.setItem(6, this.getDeny());
     }
 }

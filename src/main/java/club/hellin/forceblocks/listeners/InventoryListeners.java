@@ -1,10 +1,8 @@
 package club.hellin.forceblocks.listeners;
 
-import club.hellin.forceblocks.Main;
 import club.hellin.forceblocks.inventory.AbstractInventory;
 import club.hellin.forceblocks.inventory.InventoryManager;
 import club.hellin.forceblocks.inventory.objects.InventoryClick;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,10 +11,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.UUID;
 
 public final class InventoryListeners implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -40,6 +41,11 @@ public final class InventoryListeners implements Listener {
 
         if (!clickedItem.hasItemMeta())
             return;
+
+        if (inventory.getBackButton().isSimilar(clickedItem)) {
+            inventory.back(player);
+            return;
+        }
 
         final InventoryClick click = new InventoryClick(e, player, view, clickedItem);
         inventory.handle(click);
@@ -70,6 +76,7 @@ public final class InventoryListeners implements Listener {
             return;
 
         final Player player = (Player) e.getPlayer();
+        final UUID uuid = player.getUniqueId();
 
         final InventoryView view = e.getView();
         final AbstractInventory inventory = InventoryManager.getInstance().getInventory(view);
@@ -77,7 +84,27 @@ public final class InventoryListeners implements Listener {
         if (inventory == null)
             return;
 
+        InventoryManager.getInstance().getLastInventoryMap().put(uuid, inventory);
         inventory.close(player);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onInventoryOpen(final InventoryOpenEvent e) {
+        if (!(e.getPlayer() instanceof Player))
+            return;
+
+        final Player player = (Player) e.getPlayer();
+
+        final InventoryView view = e.getView();
+        final AbstractInventory inventory = InventoryManager.getInstance().getInventory(view);
+
+        if (inventory == null)
+            return;
+
+        if (inventory.isOpen(player))
+            return;
+
+        inventory.addOpen(player);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

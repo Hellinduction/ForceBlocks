@@ -37,4 +37,13 @@ public final class ForceBlockConfig {
 
     @Comment("Should this Force Block affect explosives?")
     private boolean affectExplosives = true;
+
+    @Comment("Should this Force Block affect hostile mobs?")
+    private boolean affectHostileMobs = true;
+
+    @Comment("Should this Force Block affect trusted players?")
+    private boolean affectTrustedPlayers = false;
+
+    @Comment("Should this Force Block affect projectiles?")
+    private boolean affectProjectiles = true;
 }

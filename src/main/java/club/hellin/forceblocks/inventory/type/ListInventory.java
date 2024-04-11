@@ -164,6 +164,7 @@ public abstract class ListInventory<E> extends AbstractInventory {
 
         inventory.setItem(bottomRowFirstIndex, this.getPreviousPageButton());
         inventory.setItem(bottomRowMidIndex, this.getPageInfo(player));
+        inventory.setItem(bottomRowLastIndex - 1, super.getBackButton());
         inventory.setItem(bottomRowLastIndex, this.getNextPageButton());
     }
 

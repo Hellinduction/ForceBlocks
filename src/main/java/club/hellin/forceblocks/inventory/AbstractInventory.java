@@ -1,6 +1,7 @@
 package club.hellin.forceblocks.inventory;
 
 import club.hellin.forceblocks.Main;
+import club.hellin.forceblocks.utils.ItemStackBuilder;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -9,13 +10,16 @@ import lombok.ToString;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 
 import java.lang.annotation.Annotation;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Getter
 @Setter(AccessLevel.PROTECTED)
@@ -124,8 +128,49 @@ public abstract class AbstractInventory implements InventoryBase {
         this.open.remove(uuid);
     }
 
-    protected void addOpen(final Player player) {
+    @Override
+    public void back(final Player player) {
+        final InventoryView view = player.getOpenInventory();
+        final UUID uuid = player.getUniqueId();
+
+        final AbstractInventory lastInventory = InventoryManager.getInstance().getLastInventoryMap().get(uuid);
+        final AbstractInventory currentInventory = InventoryManager.getInstance().getInventory(view);
+
+        if (lastInventory == null || currentInventory == null)
+            return;
+
+        final Object attachment = currentInventory.getAttachment(player);
+
+        player.closeInventory();
+
+        final Inventory inventory = lastInventory.createInventory(player, attachment);
+        player.openInventory(inventory);
+    }
+
+    public ItemStack getBackButton() {
+        ItemStack item = new ItemStackBuilder(Material.MAGENTA_GLAZED_TERRACOTTA)
+                .addEnchant(Enchantment.KNOCKBACK)
+                .hideEnchants()
+                .setDisplayName("&bGo Back")
+                .build();
+
+        item = this.tag(item);
+
+        return item;
+    }
+
+    public void addOpen(final Player player) {
         this.addOpen(player, null);
+    }
+
+    protected void addOpen(final Player player, final OpenSession session) {
+        final UUID uuid = player.getUniqueId();
+        this.open.put(uuid, session == null ? new OpenSession(uuid) : session);
+    }
+
+    public boolean isOpen(final Player player) {
+        final UUID uuid = player.getUniqueId();
+        return this.open.containsKey(uuid);
     }
 
     protected <T> void setAttachment(final Player player, final T attachment) {
@@ -146,11 +191,6 @@ public abstract class AbstractInventory implements InventoryBase {
             return null;
 
         return session.getAttachment();
-    }
-
-    protected void addOpen(final Player player, final OpenSession session) {
-        final UUID uuid = player.getUniqueId();
-        this.open.put(uuid, session == null ? new OpenSession(uuid) : session);
     }
 
     public void updateAll() {

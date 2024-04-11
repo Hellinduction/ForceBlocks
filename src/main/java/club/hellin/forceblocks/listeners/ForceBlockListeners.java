@@ -32,6 +32,9 @@ public final class ForceBlockListeners implements Listener {
     private static final String NBT_AFFECT_PLAYERS_TAG = "force_block_affect_players";
     private static final String NBT_AFFECT_NON_HOSTILE_MOBS_TAG = "force_block_affect_non_hostile_mobs";
     private static final String NBT_AFFECT_EXPLOSIVES_TAG = "force_block_affect_explosives";
+    private static final String NBT_AFFECT_HOSTILE_MOBS_TAG = "force_block_affect_hostile_mobs";
+    private static final String NBT_AFFECT_TRUSTED_PLAYERS_TAG = "force_block_affect_trusted_players";
+    private static final String NBT_AFFECT_PROJECTILES_TAG = "force_block_affect_projectiles";
 
     private final Map<UUID, Long> lastInteraction = new HashMap<>();
 
@@ -78,16 +81,22 @@ public final class ForceBlockListeners implements Listener {
             forceBlock.save();
         }
 
-        if (nbt.hasTag(NBT_AFFECT_PLAYERS_TAG) && nbt.hasTag(NBT_AFFECT_NON_HOSTILE_MOBS_TAG) && nbt.hasTag(NBT_AFFECT_EXPLOSIVES_TAG)) {
+        if (nbt.hasTag(NBT_AFFECT_PLAYERS_TAG) && nbt.hasTag(NBT_AFFECT_NON_HOSTILE_MOBS_TAG) && nbt.hasTag(NBT_AFFECT_EXPLOSIVES_TAG) && nbt.hasTag(NBT_AFFECT_HOSTILE_MOBS_TAG) && nbt.hasTag(NBT_AFFECT_TRUSTED_PLAYERS_TAG) && nbt.hasTag(NBT_AFFECT_PROJECTILES_TAG)) {
             final boolean affectPlayers = nbt.getBoolean(NBT_AFFECT_PLAYERS_TAG);
             final boolean affectNonHostileMobs = nbt.getBoolean(NBT_AFFECT_NON_HOSTILE_MOBS_TAG);
             final boolean affectExplosives = nbt.getBoolean(NBT_AFFECT_EXPLOSIVES_TAG);
+            final boolean affectHostileMobs = nbt.getBoolean(NBT_AFFECT_HOSTILE_MOBS_TAG);
+            final boolean affectTrustedPlayers = nbt.getBoolean(NBT_AFFECT_TRUSTED_PLAYERS_TAG);
+            final boolean affectAffectProjectiles = nbt.getBoolean(NBT_AFFECT_PROJECTILES_TAG);
 
             final ForceBlockConfig config = forceBlock.getConfig();
 
             config.setAffectPlayers(affectPlayers);
             config.setAffectNonHostileMobs(affectNonHostileMobs);
             config.setAffectExplosives(affectExplosives);
+            config.setAffectHostileMobs(affectHostileMobs);
+            config.setAffectTrustedPlayers(affectTrustedPlayers);
+            config.setAffectProjectiles(affectAffectProjectiles);
 
             forceBlock.save();
         }
@@ -127,6 +136,9 @@ public final class ForceBlockListeners implements Listener {
         nbt.setBoolean(NBT_AFFECT_PLAYERS_TAG, config.isAffectPlayers());
         nbt.setBoolean(NBT_AFFECT_NON_HOSTILE_MOBS_TAG, config.isAffectNonHostileMobs());
         nbt.setBoolean(NBT_AFFECT_EXPLOSIVES_TAG, config.isAffectExplosives());
+        nbt.setBoolean(NBT_AFFECT_HOSTILE_MOBS_TAG, config.isAffectHostileMobs());
+        nbt.setBoolean(NBT_AFFECT_TRUSTED_PLAYERS_TAG, config.isAffectTrustedPlayers());
+        nbt.setBoolean(NBT_AFFECT_PROJECTILES_TAG, config.isAffectProjectiles());
 
         item = nbt.getItem();
 

@@ -7,19 +7,21 @@ import club.hellin.forceblocks.inventory.impl.TrustListInventory;
 import club.hellin.forceblocks.inventory.objects.Confirmation;
 import club.hellin.forceblocks.inventory.type.VerifyInventory;
 import club.hellin.forceblocks.utils.ComponentManager;
+import lombok.Getter;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 
+@Getter
 public final class InventoryManager extends ComponentManager<AbstractInventory> {
     private static InventoryManager singletonInstance;
+
+    private final Map<UUID, AbstractInventory> lastInventoryMap = new HashMap<>();
 
     public static InventoryManager getInstance() {
         if (!(singletonInstance instanceof InventoryManager))

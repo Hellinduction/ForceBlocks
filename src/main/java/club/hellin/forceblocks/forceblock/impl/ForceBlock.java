@@ -36,6 +36,8 @@ public final class ForceBlock implements ForceBlockBase {
     private static final int MAX_SPHERE_RADIUS = 100; // This is only for the particle sphere
     public static final File DIR = new File(Main.instance.getDataFolder(), "blocks");
 
+    private final Map<Projectile, UUID> originalShooterMap = new HashMap<>();
+
     private File configFile;
     private ForceBlockConfig config;
 
@@ -183,17 +185,17 @@ public final class ForceBlock implements ForceBlockBase {
     }
 
     private boolean allowEntity(final Entity entity) {
-        if (entity instanceof Projectile)
+        if (entity instanceof Projectile && this.config.isAffectProjectiles())
             return true;
 
-        if (entity instanceof Monster)
+        if (entity instanceof Monster && this.config.isAffectHostileMobs())
             return true;
 
         if (entity instanceof Player && this.config.isAffectPlayers())
             return true;
 
         if (entity instanceof Mob && this.config.isAffectNonHostileMobs())
-            return true;
+            return (entity instanceof Monster && this.config.isAffectHostileMobs()) || !(entity instanceof Monster);
 
         if ((entity instanceof TNTPrimed || entity instanceof Explosive || entity instanceof ExplosiveMinecart) && this.config.isAffectExplosives())
             return true;
@@ -214,21 +216,39 @@ public final class ForceBlock implements ForceBlockBase {
             if (forceBlock != null && !forceBlock.equals(this))
                 continue;
 
-            if (this.isPermitted(entity.getUniqueId()))
+            if (this.isPermitted(entity.getUniqueId()) && !this.config.isAffectTrustedPlayers())
                 continue;
 
             // Deflecting projectiles
-            if (entity instanceof Projectile) {
+            if (entity instanceof Projectile && this.config.isAffectProjectiles()) {
                 final Projectile projectile = (Projectile) entity;
                 final ProjectileSource source = projectile.getShooter();
 
-                if (source instanceof Player) {
+                if (source instanceof Player && !this.config.isAffectPlayers())
+                    continue;
+
+                if (source instanceof Player && this.config.isAffectPlayers()) {
                     final Player shooter = (Player) source;
-                    if (shooter != null && this.isPermitted(shooter))
+                    final Player originalShooter = Bukkit.getPlayer(this.originalShooterMap.getOrDefault(projectile, shooter.getUniqueId()));
+
+                    if (originalShooter != null && this.isPermitted(originalShooter) && !this.config.isAffectTrustedPlayers())
                         continue;
+
+                    final Player owner = Bukkit.getPlayer(this.config.getOwner());
+
+                    if (owner != null && owner.isOnline() && !shooter.equals(owner) && !(projectile instanceof EnderPearl) && !(projectile instanceof Trident)) {
+                        projectile.setShooter(owner);
+                        this.originalShooterMap.put(projectile, shooter.getUniqueId());
+                    }
                 }
 
-                if (source instanceof Mob && !(source instanceof Monster))
+                final boolean isNonHostile = source instanceof Mob && !(source instanceof Monster);
+                final boolean isPlayer = source instanceof Player;
+
+                if (!isPlayer && isNonHostile && !this.config.isAffectNonHostileMobs())
+                    continue;
+
+                if (!isPlayer && !isNonHostile && !this.config.isAffectHostileMobs())
                     continue;
             }
 

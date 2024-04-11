@@ -19,6 +19,7 @@ public interface InventoryBase {
     Inventory createInventory(final Player player);
     <T> Inventory createInventory(final Player player, final T attachment);
     void handle(final InventoryClick click);
+    void back(final Player player);
     void setItems(final Player player, final Inventory inventory);
     boolean verify(final ItemStack item);
     ItemStack tag(final ItemStack item);
