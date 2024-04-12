@@ -13,6 +13,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.InventoryView;
@@ -140,6 +141,14 @@ public final class InventoryListeners implements Listener {
     public void onPlayerQuit(final PlayerQuitEvent e) {
         for (final AbstractInventory inventory : InventoryManager.getInstance().get()) {
             if (inventory.getProperties().updateOnLeave())
+                inventory.updateAll();
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerCommandPreprocess(final PlayerCommandPreprocessEvent e) {
+        for (final AbstractInventory inventory : InventoryManager.getInstance().get()) {
+            if (inventory.getProperties().updateOnCommand())
                 inventory.updateAll();
         }
     }

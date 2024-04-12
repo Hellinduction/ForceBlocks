@@ -56,7 +56,7 @@ public final class ForceBlockTrustCommand {
             return;
         }
 
-        if (block.isOwner(toTrust)) {
+        if (player.equals(toTrust)) {
             player.sendMessage(ChatColor.RED + "You cannot trust yourself.");
             return;
         }

@@ -11,4 +11,5 @@ public @interface InventoryProperties {
     String title();
     boolean updateOnJoin() default false;
     boolean updateOnLeave() default false;
+    boolean updateOnCommand() default false;
 }

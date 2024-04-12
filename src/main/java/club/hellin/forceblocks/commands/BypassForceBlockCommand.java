@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Getter
 public final class BypassForceBlockCommand {
-    private static final String PERMISSION = "forceblock.bypass";
+    public static final String PERMISSION = "forceblock.bypass";
 
     private final List<UUID> bypassList = new ArrayList<>();
 

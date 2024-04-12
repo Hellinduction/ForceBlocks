@@ -1,5 +1,6 @@
 package club.hellin.forceblocks.inventory.impl;
 
+import club.hellin.forceblocks.commands.BypassForceBlockCommand;
 import club.hellin.forceblocks.commands.ForceBlockTrustCommand;
 import club.hellin.forceblocks.forceblock.impl.ForceBlock;
 import club.hellin.forceblocks.inventory.InventoryManager;
@@ -15,11 +16,13 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.metadata.MetadataValue;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
-@InventoryProperties(title = "&ePlayer Selector", updateOnJoin = true, updateOnLeave = true)
+@InventoryProperties(title = "&ePlayer Selector", updateOnJoin = true, updateOnLeave = true, updateOnCommand = true)
 public final class PlayerSelectorInventory extends ListInventory<Player> {
     @Override
     public Player convertTo(final ItemStack item) {
@@ -53,7 +56,18 @@ public final class PlayerSelectorInventory extends ListInventory<Player> {
     @Override
     public Collection<Player> provide(final Player player) {
         final ForceBlock block = super.getAttachment(player);
-        return Bukkit.getOnlinePlayers().stream().filter(p -> !block.isPermitted(p) && !p.equals(player)).collect(Collectors.toList());
+        final boolean bypass = player.hasPermission(BypassForceBlockCommand.PERMISSION);
+        final List<Player> players = Bukkit.getOnlinePlayers().stream().filter(p -> bypass || !this.isVanished(p)).collect(Collectors.toList());
+
+        return players.stream().filter(p -> !block.isPermitted(p) && !p.equals(player)).collect(Collectors.toList());
+    }
+
+    private boolean isVanished(final Player player) {
+        if (!player.isOnline())
+            return false;
+
+        final List<MetadataValue> values = player.getMetadata("vanished");
+        return values.stream().anyMatch(meta -> meta.asBoolean());
     }
 
     @Override
