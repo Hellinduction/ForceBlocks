@@ -220,7 +220,7 @@ public final class ForceBlock implements ForceBlockBase {
             if (forceBlock != null && !forceBlock.equals(this))
                 continue;
 
-            if (this.isPermitted(entity.getUniqueId()) && !this.config.isAffectTrustedPlayers())
+            if ((this.isPermitted(entity.getUniqueId()) && !this.config.isAffectTrustedPlayers()) || Main.instance.getBypassForceBlockCommand().getBypassList().contains(entity.getUniqueId()))
                 continue;
 
             // Deflecting projectiles
