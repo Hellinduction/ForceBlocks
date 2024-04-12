@@ -184,7 +184,10 @@ public final class ForceBlock implements ForceBlockBase {
         ++this.second;
     }
 
-    private boolean allowEntity(final Entity entity) {
+    private boolean pushEntity(final Entity entity) {
+        if (entity.hasMetadata("NPC"))
+            return false;
+
         if (entity instanceof Projectile && this.config.isAffectProjectiles())
             return true;
 
@@ -209,7 +212,7 @@ public final class ForceBlock implements ForceBlockBase {
         final int radius = this.config.getRadius() * 2; // Times by 2 to ensure we capture all players within the sphere
 
         for (Entity entity : loc.getWorld().getNearbyEntities(loc, radius, radius / 2, radius)) {
-            if (!this.allowEntity(entity))
+            if (!this.pushEntity(entity))
                 continue;
 
             final ForceBlock forceBlock = ForceBlockManager.getInstance().getClosestForceBlock(entity.getLocation());
