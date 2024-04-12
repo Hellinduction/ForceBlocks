@@ -13,7 +13,7 @@ import org.bukkit.inventory.Inventory;
 @InventoryProperties(title = "&b&lForce Block")
 @MainMenu
 public final class ForceBlockInventory extends CaseByCaseInventory {
-    @InventoryHandler(type = Material.STONE, name = "", switcher = true)
+    @InventoryHandler(name = "SWITCH_MODE", switcher = true)
     public void switchMode(final InventoryClick click) {
         final Player player = click.getWhoClicked();
         final ForceBlock forceBlock = super.getAttachment(player);
@@ -63,12 +63,18 @@ public final class ForceBlockInventory extends CaseByCaseInventory {
     }
 
     @Override
-    public InventoryItemProvider getProvider(final Player player) {
-        final ForceBlock block = super.getAttachment(player);
+    public InventoryItemProvider getProvider(final Player player, final InventorySwitchItem item) {
+        switch (item.getRawName()) {
+            case "SWITCH_MODE": {
+                final ForceBlock block = super.getAttachment(player);
 
-        if (block == null)
-            return null;
+                if (block == null)
+                    return null;
 
-        return block.getConfig().getMode();
+                return block.getConfig().getMode();
+            }
+        }
+
+        return null; // Boo hoo cope
     }
 }

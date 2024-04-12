@@ -19,10 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Getter
@@ -54,7 +51,7 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
 
         @Override
         public ItemStack getItem(final Player player) {
-            final InventoryItemProvider provider = super.getInventory().getProvider(player);
+            final InventoryItemProvider provider = super.getInventory().getProvider(player, this);
 
             if (provider == null)
                 return null;
@@ -112,7 +109,7 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
     }
 
     private Map<Integer, InventoryItem> getHandlers() {
-        final Map<Integer, InventoryItem> itemMap = new LinkedHashMap<>();
+        final Map<Integer, InventoryItem> itemMap = new HashMap<>();
         final Class<?> clazz = this.getClass();
 
         int currentIndex = 1;
@@ -169,7 +166,19 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
             ++currentIndex;
         }
 
-        return itemMap;
+        currentIndex = 0;
+
+        final List<InventoryItem> itemList = new ArrayList<>(itemMap.values());
+
+        itemList.sort(Comparator.comparing(InventoryItem::getRawName));
+
+        final Map<Integer, InventoryItem> sortedItemMap = new LinkedHashMap<>();
+
+        for (InventoryItem item : itemList) {
+            sortedItemMap.put(++currentIndex, item);
+        }
+
+        return sortedItemMap;
     }
 
     private ItemStack tag(final ItemStack item, final int index) {
@@ -189,7 +198,7 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
         return false;
     }
 
-    public InventoryItemProvider getProvider(final Player player) {
+    public InventoryItemProvider getProvider(final Player player, final InventorySwitchItem item) {
         return null;
     }
 
@@ -282,7 +291,7 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
             inventory.setItem(rightIndex, right.getItem(player));
         }
 
-        if (this.isBottomRowFree(player, inventory)) {
+        if (this.isBottomRowFree(player, inventory) && !super.isMainMenu()) {
             final int mid = size - 5;
             inventory.setItem(mid, super.getBackButton());
         }
