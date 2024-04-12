@@ -15,6 +15,7 @@ import eu.decentsoftware.holograms.api.DHAPI;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
 import lombok.Getter;
 import lombok.ToString;
+import org.apache.commons.codec.binary.Base32;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.entity.minecart.ExplosiveMinecart;
@@ -379,6 +380,8 @@ public final class ForceBlock implements ForceBlockBase {
         return this.config.getOwner().equals(uuid) || Main.instance.getBypassForceBlockCommand().getBypassList().contains(uuid);
     }
 
+    private static final String SEPARATOR = ";";
+
     public static String convertLocationToFileName(final Location loc) {
         final StringBuilder builder = new StringBuilder();
 
@@ -387,18 +390,30 @@ public final class ForceBlock implements ForceBlockBase {
         final int z = (int) Math.round(loc.getZ());
 
         builder.append(loc.getWorld().getName());
-        builder.append("Q");
+        builder.append(SEPARATOR);
         builder.append(x);
-        builder.append("Q");
+        builder.append(SEPARATOR);
         builder.append(y);
-        builder.append("Q");
+        builder.append(SEPARATOR);
         builder.append(z);
 
-        return builder.toString();
+        final String str = builder.toString();
+        return new Base32().encodeToString(str.getBytes()).replaceAll("=", "");
     }
 
-    public static Location convertFileNameToLocation(final String name) {
-        final String[] splits = name.split("Q");
+    public static Location convertFileNameToLocation(String name) {
+        int paddingLength = name.length() % 8;
+
+        if (paddingLength > 0) {
+            paddingLength = 8 - paddingLength;
+
+            for (int i = 0; i < paddingLength; ++i)
+                name += "=";
+        }
+
+        name = new String(new Base32().decode(name));
+
+        final String[] splits = name.split(SEPARATOR);
         final String worldName = splits[0];
         final World world = Bukkit.getWorld(worldName);
         final int x = Integer.parseInt(splits[1]);

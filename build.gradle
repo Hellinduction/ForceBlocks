@@ -52,6 +52,7 @@ dependencies {
     implementation group: 'org.json', name: 'json', version: '20240303'
     compileOnly 'me.clip:placeholderapi:2.11.4'
     implementation 'com.github.patheloper.pathetic:pathetic-mapping:2.4.1'
+    implementation "commons-codec:commons-codec:1.15"
 }
 
 shadowJar {
