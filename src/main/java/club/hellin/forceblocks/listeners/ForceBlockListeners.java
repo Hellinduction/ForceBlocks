@@ -46,6 +46,7 @@ public final class ForceBlockListeners implements Listener {
         final Block block = e.getBlock();
 
         final ForceBlock fb = ForceBlockManager.getInstance().getForceBlock(e.getBlockAgainst().getLocation());
+
         if (fb != null) {
             e.setCancelled(true);
             return;
@@ -187,7 +188,7 @@ public final class ForceBlockListeners implements Listener {
         final Player player = e.getPlayer();
         final Action action = e.getAction();
 
-        if (action != Action.RIGHT_CLICK_BLOCK)
+        if (action != Action.RIGHT_CLICK_BLOCK || player.isSneaking())
             return;
 
         final long now = Instant.now().getEpochSecond();
