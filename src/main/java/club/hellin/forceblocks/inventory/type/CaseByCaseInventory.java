@@ -4,10 +4,7 @@ import club.hellin.forceblocks.inventory.*;
 import club.hellin.forceblocks.inventory.objects.InventoryClick;
 import club.hellin.forceblocks.utils.ItemStackBuilder;
 import de.tr7zw.changeme.nbtapi.NBTItem;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -30,16 +27,21 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
     @AllArgsConstructor
     @ToString
     @Getter
+    @Setter
     public static class InventoryItem {
         private final String coloredName;
         private final String rawName;
-        private final @Getter(AccessLevel.NONE) ItemStack item;
+        private @Getter(AccessLevel.PROTECTED) ItemStack item;
         private final Method method;
         private final CaseByCaseInventory inventory;
-        private final int index;
+        private int index;
 
         public ItemStack getItem(final Player player) {
             return this.item;
+        }
+
+        public boolean isInventoryItem() {
+            return InventoryItem.class.getSimpleName().equals(this.getClass().getSimpleName());
         }
     }
 
@@ -174,8 +176,12 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
 
         final Map<Integer, InventoryItem> sortedItemMap = new LinkedHashMap<>();
 
-        for (InventoryItem item : itemList) {
+        for (final InventoryItem item : itemList) {
             sortedItemMap.put(++currentIndex, item);
+            item.setIndex(currentIndex);
+
+            if (item.isInventoryItem())
+                item.setItem(this.tag(item.getItem(), currentIndex));
         }
 
         return sortedItemMap;
