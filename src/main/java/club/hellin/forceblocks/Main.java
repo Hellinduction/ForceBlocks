@@ -23,7 +23,6 @@ public final class Main extends JavaPlugin {
 
     public static Main instance;
 
-    private BypassForceBlockCommand bypassForceBlockCommand;
     private Pathfinder pathfinder;
     private Pathfinder playerPathfinder;
 
@@ -79,7 +78,7 @@ public final class Main extends JavaPlugin {
         service.register(new ForceBlockTrustCommand(), "forceblocktrust");
         service.register(new ProjectileAimbotCommand(), "projectileaimbot");
         service.register(new ReachCommand(), "reach");
-        service.register(this.bypassForceBlockCommand = new BypassForceBlockCommand(), "bypassforceblock");
+        service.register(new BypassForceBlockCommand(), "bypassforceblock");
 //        service.register(new OpenInventoryCommand(), "openinventory");
 
         service.registerCommands();

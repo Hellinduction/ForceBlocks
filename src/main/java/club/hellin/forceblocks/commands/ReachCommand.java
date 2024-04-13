@@ -1,6 +1,7 @@
 package club.hellin.forceblocks.commands;
 
 import club.hellin.forceblocks.Main;
+import club.hellin.forceblocks.utils.GeneralConfig;
 import com.jonahseguin.drink.annotation.Command;
 import com.jonahseguin.drink.annotation.OptArg;
 import com.jonahseguin.drink.annotation.Require;
@@ -30,8 +31,6 @@ public final class ReachCommand implements Listener {
 
     private static boolean registeredListeners = false;
 
-    private final Map<UUID, Double> reachMap = new HashMap<>();
-
     public ReachCommand() {
         if (!registeredListeners) {
             Bukkit.getPluginManager().registerEvents(this, Main.instance);
@@ -55,7 +54,9 @@ public final class ReachCommand implements Listener {
         final Player player = (Player) sender;
         final UUID uuid = player.getUniqueId();
 
-        this.reachMap.put(uuid, reach);
+        final GeneralConfig config = GeneralConfig.getInstance();
+        config.getReachMap().put(uuid, reach);
+        GeneralConfig.save(config);
 
         if (reach == DEFAULT_REACH) {
             player.sendMessage(ChatColor.GREEN + "You have reset your reach.");
@@ -69,7 +70,8 @@ public final class ReachCommand implements Listener {
     public void onPlayerInteract(final PlayerInteractEvent e) {
         final Player player = e.getPlayer();
         final UUID uuid = player.getUniqueId();
-        final double reach = this.reachMap.getOrDefault(uuid, DEFAULT_REACH);
+        final GeneralConfig config = GeneralConfig.getInstance();
+        final double reach = config.getReachMap().getOrDefault(uuid, DEFAULT_REACH);
 
         if (reach <= DEFAULT_REACH)
             return;

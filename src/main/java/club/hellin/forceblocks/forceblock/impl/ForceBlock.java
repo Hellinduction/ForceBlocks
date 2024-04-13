@@ -7,9 +7,8 @@ import club.hellin.forceblocks.inventory.AbstractInventory;
 import club.hellin.forceblocks.inventory.InventoryManager;
 import club.hellin.forceblocks.inventory.impl.ForceBlockInventory;
 import club.hellin.forceblocks.listeners.ForceBlockListeners;
+import club.hellin.forceblocks.utils.GeneralConfig;
 import club.hellin.forceblocks.utils.WorldEditUtils;
-import de.exlll.configlib.ConfigLib;
-import de.exlll.configlib.YamlConfigurationProperties;
 import de.exlll.configlib.YamlConfigurations;
 import eu.decentsoftware.holograms.api.DHAPI;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
@@ -31,7 +30,6 @@ import java.util.*;
 @Getter
 @ToString
 public final class ForceBlock implements ForceBlockBase {
-    private static final YamlConfigurationProperties PROPERTIES = ConfigLib.BUKKIT_DEFAULT_PROPERTIES.toBuilder().build();
     private static final double PUSH_DISTANCE = 1.2D;
     private static final double PULL_DISTANCE = 1.2D;
     private static final int MAX_SPHERE_RADIUS = 100; // This is only for the particle sphere
@@ -154,9 +152,9 @@ public final class ForceBlock implements ForceBlockBase {
         final File config = this.getConfigFile();
 
         if (!config.exists())
-            YamlConfigurations.update(config.toPath(), configClass, PROPERTIES);
+            YamlConfigurations.update(config.toPath(), configClass, GeneralConfig.PROPERTIES);
 
-        YamlConfigurations.save(config.toPath(), configClass, configClass.cast(this.getConfig()), PROPERTIES);
+        YamlConfigurations.save(config.toPath(), configClass, configClass.cast(this.getConfig()), GeneralConfig.PROPERTIES);
     }
 
     @Override
@@ -220,7 +218,7 @@ public final class ForceBlock implements ForceBlockBase {
             if (forceBlock != null && !forceBlock.equals(this))
                 continue;
 
-            if ((this.isPermitted(entity.getUniqueId()) && !this.config.isAffectTrustedPlayers()) || Main.instance.getBypassForceBlockCommand().getBypassList().contains(entity.getUniqueId()))
+            if ((this.isPermitted(entity.getUniqueId()) && !this.config.isAffectTrustedPlayers()) || GeneralConfig.getInstance().getBypassList().contains(entity.getUniqueId()))
                 continue;
 
             // Deflecting projectiles
@@ -377,7 +375,7 @@ public final class ForceBlock implements ForceBlockBase {
 
     @Override
     public boolean isOwner(final UUID uuid) {
-        return this.config.getOwner().equals(uuid) || Main.instance.getBypassForceBlockCommand().getBypassList().contains(uuid);
+        return this.config.getOwner().equals(uuid) || GeneralConfig.getInstance().getBypassList().contains(uuid);
     }
 
     private static final String SEPARATOR = ";";
@@ -427,7 +425,7 @@ public final class ForceBlock implements ForceBlockBase {
     public static ForceBlockConfig load(final File configFile) {
         final Class<? extends ForceBlockConfig> configClass = ForceBlockConfig.class;
 
-        final ForceBlockConfig config = YamlConfigurations.load(configFile.toPath(), configClass, PROPERTIES);
+        final ForceBlockConfig config = YamlConfigurations.load(configFile.toPath(), configClass, GeneralConfig.PROPERTIES);
         return config;
     }
 
@@ -475,6 +473,9 @@ public final class ForceBlock implements ForceBlockBase {
 
         // Ensure strength is always positive
         strength = Math.abs(strength);
+
+        if (strength < 0.01)
+            strength = 0.01;
 
         // Calculate direction towards the center of the magnet
         final Vector towardsCenter = center.toVector().subtract(nearbyLoc.toVector());

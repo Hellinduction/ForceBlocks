@@ -3,6 +3,7 @@ package club.hellin.forceblocks.commands;
 import club.hellin.forceblocks.Main;
 import club.hellin.forceblocks.commands.strategy.ArrowPathfinderStrategy;
 import club.hellin.forceblocks.listeners.ForceBlockListeners;
+import club.hellin.forceblocks.utils.GeneralConfig;
 import com.jonahseguin.drink.annotation.Command;
 import com.jonahseguin.drink.annotation.Require;
 import com.jonahseguin.drink.annotation.Sender;
@@ -38,12 +39,9 @@ public final class ProjectileAimbotCommand implements Listener {
 
     private static boolean registeredListeners = false;
 
-    private final List<UUID> toggledOn = new ArrayList<>();
     private final Map<Projectile, PathfinderResult> resultMap = new HashMap<>();
     private final Map<Projectile, Integer> indexMap = new HashMap<>();
     private final Map<Projectile, Location> lastLocMap = new HashMap<>();
-
-    private boolean pathFind = false;
 
     public ProjectileAimbotCommand() {
         if (!registeredListeners) {
@@ -62,16 +60,19 @@ public final class ProjectileAimbotCommand implements Listener {
 
         final Player p = (Player) sender;
         final UUID uuid = p.getUniqueId();
+        final GeneralConfig config = GeneralConfig.getInstance();
 
-        final boolean toggled = this.toggledOn.contains(uuid);
+        final boolean toggled = config.getProjectileAimbotToggledOn().contains(uuid);
 
         if (toggled) {
-            this.toggledOn.remove(uuid);
+            config.getProjectileAimbotToggledOn().remove(uuid);
+            GeneralConfig.save(config);
             p.sendMessage(ChatColor.GREEN + "Toggled Projectile Aimbot off.");
             return;
         }
 
-        this.toggledOn.add(uuid);
+        config.getProjectileAimbotToggledOn().add(uuid);
+        GeneralConfig.save(config);
         p.sendMessage(ChatColor.GREEN + "Toggled Projectile Aimbot on.");
     }
 
@@ -83,9 +84,11 @@ public final class ProjectileAimbotCommand implements Listener {
             return;
         }
 
-        this.pathFind = !this.pathFind;
+        final GeneralConfig config = GeneralConfig.getInstance();
+        config.setPathFind(!config.isPathFind());
+        GeneralConfig.save(config);
 
-        if (this.pathFind) {
+        if (config.isPathFind()) {
             sender.sendMessage(ChatColor.GREEN + "Toggled path finding on.");
             return;
         }
@@ -109,11 +112,12 @@ public final class ProjectileAimbotCommand implements Listener {
 
         final Player shooter = (Player) source;
         final UUID uuid = shooter.getUniqueId();
+        final GeneralConfig config = GeneralConfig.getInstance();
 
-        if (!this.toggledOn.contains(uuid))
+        if (!config.getProjectileAimbotToggledOn().contains(uuid))
             return;
 
-        if (this.pathFind) {
+        if (config.isPathFind()) {
             projectile.setVelocity(projectile.getVelocity().multiply(0.4));
 //            projectile.setVelocity(new Vector());
 //            projectile.setGravity(false);
@@ -137,7 +141,7 @@ public final class ProjectileAimbotCommand implements Listener {
                     super.cancel();
                 };
 
-                if (!toggledOn.contains(uuid)) {
+                if (!config.getProjectileAimbotToggledOn().contains(uuid)) {
                     cancel.run();
                     return;
                 }
@@ -174,8 +178,9 @@ public final class ProjectileAimbotCommand implements Listener {
 
     private void pushTowards(final Projectile projectile, final Location targetLoc, final double speed, final Vector originalVelocity) {
         final Location nearbyLoc = projectile.getLocation();
+        final GeneralConfig config = GeneralConfig.getInstance();
 
-        if (nearbyLoc.distance(targetLoc) < 2 || !this.pathFind) {
+        if (nearbyLoc.distance(targetLoc) < 2 || !config.isPathFind()) {
             final Vector direction = targetLoc.subtract(nearbyLoc).toVector().normalize();
             final Vector velocity = direction.multiply(speed);
 
@@ -230,6 +235,7 @@ public final class ProjectileAimbotCommand implements Listener {
 
     private void handlePath(final Projectile projectile, double speed, final PathfinderResult result) {
         final int index = this.indexMap.getOrDefault(projectile, 0);
+        final GeneralConfig config = GeneralConfig.getInstance();
 
         final Location nearbyLoc = projectile.getLocation();
         final Path path = result.getPath();
@@ -253,7 +259,7 @@ public final class ProjectileAimbotCommand implements Listener {
             return;
         }
 
-        if (this.pathFind && speed > 0.4)
+        if (config.isPathFind() && speed > 0.4)
             speed = 0.4;
 
         this.handle(loc, nearbyLoc, speed, projectile);
@@ -365,6 +371,7 @@ public final class ProjectileAimbotCommand implements Listener {
 
         final Block block = player.getTargetBlockExact(DISTANCE);
         final World world = player.getWorld();
+        final GeneralConfig config = GeneralConfig.getInstance();
 
         double closestDist = Double.MAX_VALUE;
         Entity closestEntity = null;
@@ -382,7 +389,7 @@ public final class ProjectileAimbotCommand implements Listener {
                     continue;
 
                 // Check if there's a clear path to the entity using Bukkit's ray tracing
-                if (!this.pathFind && this.isPathObstructed(projectile, projectile.getLocation(), entity.getLocation()))
+                if (!config.isPathFind() && this.isPathObstructed(projectile, projectile.getLocation(), entity.getLocation()))
                     continue;
 
                 final double dist = entity.getLocation().distance(loc);
@@ -402,7 +409,7 @@ public final class ProjectileAimbotCommand implements Listener {
                 if (entity instanceof Player && (((Player) entity).getGameMode() == GameMode.SPECTATOR || isVanished((Player) entity)))
                     continue;
 
-                if (!this.pathFind && this.isPathObstructed(projectile, projectile.getLocation(), entity.getLocation()))
+                if (!config.isPathFind() && this.isPathObstructed(projectile, projectile.getLocation(), entity.getLocation()))
                     continue;
 
                 final double fieldOfViewAngle = Math.toRadians(FIELD_OF_VIEW);
