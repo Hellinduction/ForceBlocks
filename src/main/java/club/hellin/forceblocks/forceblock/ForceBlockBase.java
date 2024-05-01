@@ -43,7 +43,7 @@ public interface ForceBlockBase {
         this.unTrust(player.getUniqueId());
     }
 
-    List<Location> getSphere();
+//    List<Location> getSphere();
 
     boolean isOwner(final UUID uuid);
 
@@ -54,6 +54,8 @@ public interface ForceBlockBase {
     void forceField(final Entity entity);
 
     void magnet(final Entity entity);
+
+    void whirlpool(final Entity entity);
 
     boolean isPermitted(final UUID uuid);
 

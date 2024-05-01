@@ -9,6 +9,7 @@ import org.bukkit.inventory.ItemStack;
 public enum ForceMode implements InventoryItemProvider {
     FORCE_FIELD,
     MAGNET,
+    WHIRLPOOL,
     OFF;
 
     public ForceMode next() {
@@ -25,6 +26,10 @@ public enum ForceMode implements InventoryItemProvider {
 
             case MAGNET: {
                 return new ItemStackBuilder(Material.IRON_BLOCK).addEnchant(Enchantment.KNOCKBACK).hideEnchants().setDisplayName("&7&lMode: &e&lMagnet").build();
+            }
+
+            case WHIRLPOOL: {
+                return new ItemStackBuilder(Material.SEA_LANTERN).addEnchant(Enchantment.KNOCKBACK).hideEnchants().setDisplayName("&7&lMode: &e&lWhirlpool").build();
             }
 
             case OFF: {

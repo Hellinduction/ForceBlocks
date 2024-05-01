@@ -16,6 +16,7 @@ import lombok.Getter;
 import lombok.ToString;
 import org.apache.commons.codec.binary.Base32;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.entity.minecart.ExplosiveMinecart;
 import org.bukkit.inventory.Inventory;
@@ -30,8 +31,10 @@ import java.util.*;
 @Getter
 @ToString
 public final class ForceBlock implements ForceBlockBase {
-    private static final double PUSH_DISTANCE = 1.2D;
-    private static final double PULL_DISTANCE = 1.2D;
+    private static final double PUSH_STRENGTH = 1.2D;
+    private static final double PULL_STRENGTH = 1.2D;
+    private static final double WHIRLPOOL_STRENGTH = 0.3;
+
     private static final int MAX_SPHERE_RADIUS = 100; // This is only for the particle sphere
     public static final File DIR = new File(Main.instance.getDataFolder(), "blocks");
 
@@ -40,10 +43,11 @@ public final class ForceBlock implements ForceBlockBase {
     private File configFile;
     private ForceBlockConfig config;
 
-    private @ToString.Exclude List<Location> sphere;
+//    private @ToString.Exclude List<Location> sphere;
     private long second = 0;
     private Hologram hologram;
-    private List<BukkitTask> particleTasks = new ArrayList<>();
+//    private List<BukkitTask> particleTasks = new ArrayList<>();
+    private boolean particlesDisplaying;
     private boolean deleted;
 
     public ForceBlock(final Location location, final int radius, final UUID owner) {
@@ -81,7 +85,7 @@ public final class ForceBlock implements ForceBlockBase {
         return this.createHologram(loc);
     }
 
-    private Hologram createHologram(Location loc) {
+    private Hologram createHologram(final Location loc) {
         final String name = this.getHologramName(loc);
         final OfflinePlayer owner = Bukkit.getOfflinePlayer(this.config.getOwner());
 
@@ -111,8 +115,7 @@ public final class ForceBlock implements ForceBlockBase {
             this.hologram.delete();
         }
 
-        for (final BukkitTask task : this.particleTasks)
-            task.cancel();
+        this.particlesDisplaying = false;
 
         this.getConfigFile().delete();
         ForceBlockManager.getInstance().remove(this);
@@ -177,7 +180,7 @@ public final class ForceBlock implements ForceBlockBase {
 
     @Override
     public void everySecond() {
-        if (this.second % 16 == 0)
+        if (this.second % 8 == 0)
             this.displayParticles();
 
         ++this.second;
@@ -208,6 +211,11 @@ public final class ForceBlock implements ForceBlockBase {
     @Override
     public void tick() {
         final Location loc = this.getLocation();
+        final Chunk chunk = loc.getChunk();
+
+        if (!chunk.isLoaded())
+            return;
+
         final int radius = this.config.getRadius() * 2; // Times by 2 to ensure we capture all players within the sphere
 
         for (Entity entity : loc.getWorld().getNearbyEntities(loc, radius, radius / 2, radius)) {
@@ -273,67 +281,128 @@ public final class ForceBlock implements ForceBlockBase {
                     this.forceField(entity);
                     break;
                 }
+
+                case WHIRLPOOL: {
+                    this.whirlpool(entity);
+                    break;
+                }
             }
         }
     }
 
+    private boolean isOff() {
+        return this.getConfig().getMode() == ForceMode.OFF;
+    }
+
     @Override
     public void displayParticles() {
-        final List<Location> blocks = this.getSphere();
-
-        if (!this.particleTasks.isEmpty())
+        if (this.isOff())
             return;
 
-        if (blocks.isEmpty())
+//        final List<Location> blocks = this.getSphere();
+
+        if (this.particlesDisplaying)
             return;
 
-        Collections.sort(blocks, (loc1, loc2) -> {
-            if (loc1.getY() != loc2.getY())
-                return Double.compare(loc1.getY(), loc2.getY());
-            if (loc1.getBlockX() != loc2.getBlockX())
-                return Double.compare(loc1.getBlockX(), loc2.getBlockX());
-            return Double.compare(loc1.getZ(), loc2.getZ());
-        });
+//        if (blocks.isEmpty())
+//            return;
+
+//        Collections.sort(blocks, (loc1, loc2) -> {
+//            if (loc1.getY() != loc2.getY())
+//                return Double.compare(loc1.getY(), loc2.getY());
+//            if (loc1.getBlockX() != loc2.getBlockX())
+//                return Double.compare(loc1.getBlockX(), loc2.getBlockX());
+//            return Double.compare(loc1.getZ(), loc2.getZ());
+//        });
 
         final Particle particle = Particle.HEART;
+        final Location center = ForceBlockListeners.center(this.getLocation().clone());
+        final Location originalCenter = center.clone();
 
-        final int loopSize = blocks.size();
-        final BukkitTask up = new BukkitRunnable() {
-            int index = 0;
+        center.add(0, 5, 0);
 
-            @Override
-            public void run() {
-                if (index >= loopSize) {
-                    super.cancel();
-                    particleTasks.remove(this);
-                    return;
-                }
+        final int configRadius = this.getConfig().getRadius();
+        final int radius = configRadius > MAX_SPHERE_RADIUS ? MAX_SPHERE_RADIUS : configRadius;
 
-                final Location loc = blocks.get(index);
-                loc.getWorld().spawnParticle(particle, loc, 1);
-                index++;
-            }
-        }.runTaskTimer(Main.instance, 0, 3);
-
-        final BukkitTask down = new BukkitRunnable() {
-            int index = loopSize - 1;
+        new BukkitRunnable() {
+            private Location loc = center.clone().add(radius, 0, 0);
 
             @Override
             public void run() {
-                if (index < 0) {
-                    super.cancel();
-                    particleTasks.remove(this);
+                final Vector radiusVector = this.loc.toVector().subtract(center.toVector());
+
+                final Vector axis = new Vector(0, 1, 0);
+                final double angle = WHIRLPOOL_STRENGTH / radiusVector.length();
+                final Vector rotatedRadius = radiusVector.clone().rotateAroundAxis(axis, angle);
+
+                final Vector velocity = rotatedRadius.subtract(radiusVector);
+
+                final double strength = 0.5;
+                final Vector pullVector = radiusVector.normalize().multiply(strength);
+
+                final Vector newVector = velocity.add(pullVector);
+
+                final Location newLoc = center.clone().add(newVector).subtract(0, 0.1D, 0);
+                this.loc = newLoc;
+                center.subtract(0, 0.1D, 0);
+
+                try {
+                    newVector.checkFinite();
+                } catch (final RuntimeException ignored) {
                     return;
                 }
 
-                final Location loc = blocks.get(index);
-                loc.getWorld().spawnParticle(particle, loc, 1);
-                index--;
-            }
-        }.runTaskTimer(Main.instance, 0, 3);
+                final double dist = this.loc.distance(originalCenter);
 
-        this.particleTasks.add(up);
-        this.particleTasks.add(down);
+                if (dist < 1.1D || isOff()) {
+                    super.cancel();
+                    particlesDisplaying = false;
+                    return;
+                }
+
+                this.loc.getWorld().spawnParticle(particle, this.loc, 1);
+            }
+        }.runTaskTimer(Main.instance, 0L, 3L);
+
+        this.particlesDisplaying = true;
+
+//        final int loopSize = blocks.size();
+//        final BukkitTask up = new BukkitRunnable() {
+//            int index = 0;
+//
+//            @Override
+//            public void run() {
+//                if (index >= loopSize) {
+//                    super.cancel();
+//                    particleTasks.remove(this);
+//                    return;
+//                }
+//
+//                final Location loc = blocks.get(index);
+//                loc.getWorld().spawnParticle(particle, loc, 1);
+//                index++;
+//            }
+//        }.runTaskTimer(Main.instance, 0, 3);
+//
+//        final BukkitTask down = new BukkitRunnable() {
+//            int index = loopSize - 1;
+//
+//            @Override
+//            public void run() {
+//                if (index < 0) {
+//                    super.cancel();
+//                    particleTasks.remove(this);
+//                    return;
+//                }
+//
+//                final Location loc = blocks.get(index);
+//                loc.getWorld().spawnParticle(particle, loc, 1);
+//                index--;
+//            }
+//        }.runTaskTimer(Main.instance, 0, 3);
+//
+//        this.particleTasks.add(up);
+//        this.particleTasks.add(down);
     }
 
     @Override
@@ -360,18 +429,18 @@ public final class ForceBlock implements ForceBlockBase {
         this.save();
     }
 
-    @Override
-    public List<Location> getSphere() {
-        final int configRadius = this.getConfig().getRadius();
-        final int radius = configRadius > MAX_SPHERE_RADIUS ? MAX_SPHERE_RADIUS : configRadius;
-
-        if (this.sphere != null)
-            return this.sphere;
-
-        final Location center = this.getLocation();
-        final List<Location> sphere = WorldEditUtils.makeSphere(center.getWorld(), center.toVector(), radius);
-        return this.sphere = sphere;
-    }
+//    @Override
+//    public List<Location> getSphere() {
+//        final int configRadius = this.getConfig().getRadius();
+//        final int radius = configRadius > MAX_SPHERE_RADIUS ? MAX_SPHERE_RADIUS : configRadius;
+//
+//        if (this.sphere != null)
+//            return this.sphere;
+//
+//        final Location center = this.getLocation();
+//        final List<Location> sphere = WorldEditUtils.makeSphere(center.getWorld(), center.toVector(), radius);
+//        return this.sphere = sphere;
+//    }
 
     @Override
     public boolean isOwner(final UUID uuid) {
@@ -437,7 +506,7 @@ public final class ForceBlock implements ForceBlockBase {
         final Vector awayFromCenter = new Vector(nearbyLoc.getX() - center.getX(), nearbyLoc.getY() - center.getY(), nearbyLoc.getZ() - center.getZ());
         awayFromCenter.normalize();
         awayFromCenter.setY(awayFromCenter.getY() + 0.1D);
-        awayFromCenter.multiply(PUSH_DISTANCE);
+        awayFromCenter.multiply(PUSH_STRENGTH);
 
         try {
             awayFromCenter.checkFinite();
@@ -458,7 +527,7 @@ public final class ForceBlock implements ForceBlockBase {
         final double distance = center.distance(nearbyLoc);
 
         final double maxDistance = 10.0; // Adjust this value based on your preference
-        double strength = PULL_DISTANCE * Math.exp(-distance / maxDistance);
+        double strength = PULL_STRENGTH * Math.exp(-distance / maxDistance);
 //
 //        if (distance < 3 * (this.config.getRadius() / 2))
 //            strength *= (1 - Math.pow(distance / maxDistance, 2));
@@ -491,6 +560,33 @@ public final class ForceBlock implements ForceBlockBase {
         }
 
         nearby.setVelocity(towardsCenter);
+    }
+
+
+    @Override
+    public void whirlpool(final Entity entity) {
+        final Location center = ForceBlockListeners.center(this.getLocation());
+        final Vector radius = entity.getLocation().toVector().subtract(center.toVector());
+
+        final Vector axis = new Vector(0, 1, 0);
+        final double angle = WHIRLPOOL_STRENGTH / radius.length();
+        final Vector rotatedRadius = radius.clone().rotateAroundAxis(axis, angle);
+
+        final Vector velocity = rotatedRadius.subtract(radius);
+
+        final boolean isPlayer = entity instanceof Player;
+        final double pullStrength = isPlayer ? 0.06 : 0.03;
+        final Vector pullVector = radius.normalize().multiply(-pullStrength);
+
+        final Vector newVector = velocity.add(pullVector);
+
+        try {
+            newVector.checkFinite();
+        } catch (final RuntimeException ignored) {
+            return;
+        }
+
+        entity.setVelocity(newVector);
     }
 
     @Override

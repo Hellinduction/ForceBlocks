@@ -9,16 +9,17 @@ import club.hellin.forceblocks.forceblock.impl.ForceMode;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.json.JSONArray;
 
@@ -103,7 +104,7 @@ public final class ForceBlockListeners implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBlockBreak(final BlockBreakEvent e) {
         final Block block = e.getBlock();
         final Player player = e.getPlayer();
@@ -117,23 +118,30 @@ public final class ForceBlockListeners implements Listener {
             final OfflinePlayer owner = Bukkit.getOfflinePlayer(forceBlock.getConfig().getOwner());
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', String.format("&cYou cannot break &e%s%s&c Force Block!", owner.getName(), owner.getName().toLowerCase().endsWith("s") ? "'" : "'s")));
             e.setCancelled(true);
-            return;
         }
 
-        final Material type = block.getType();
-        ItemStack item = new ItemStack(type);
+//        final Material type = block.getType();
+//        ItemStack item = new ItemStack(type);
+//        item = apply(item, forceBlock);
+//
+//        final PlayerInventory inv = player.getInventory();
+//        inv.addItem(item);
+//        player.updateInventory();
+
+//        e.setDropItems(false);
+    }
+
+    private static ItemStack apply(ItemStack item, final ForceBlock forceBlock) {
         item = ApplyForceBlockCommand.apply(item, forceBlock.getConfig().getRadius());
 
         final NBTItem nbt = new NBTItem(item);
-
         final JSONArray array = new JSONArray(forceBlock.getConfig().getTrusted());
-        final String json = array.toString();
 
+        final String json = array.toString();
         final ForceBlockConfig config = forceBlock.getConfig();
 
         nbt.setString(NBT_TRUSTED_TAG, json);
         nbt.setString(NBT_MODE_TAG, config.getMode().name());
-
         nbt.setBoolean(NBT_AFFECT_PLAYERS_TAG, config.isAffectPlayers());
         nbt.setBoolean(NBT_AFFECT_NON_HOSTILE_MOBS_TAG, config.isAffectNonHostileMobs());
         nbt.setBoolean(NBT_AFFECT_EXPLOSIVES_TAG, config.isAffectExplosives());
@@ -145,14 +153,38 @@ public final class ForceBlockListeners implements Listener {
 
         final ItemMeta meta = item.getItemMeta();
         meta.setLore(Arrays.asList(ChatColor.GRAY + "" + ChatColor.ITALIC + "Mode: " + ChatColor.YELLOW + forceBlock.getConfig().getMode().name()));
-
         item.setItemMeta(meta);
 
-        final PlayerInventory inv = player.getInventory();
-        inv.addItem(item);
-        player.updateInventory();
+        return item;
+    }
 
-        e.setDropItems(false);
+    @EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
+    public void onBlockDropItem(final BlockDropItemEvent e) {
+        final Block block = e.getBlock();
+        final Player player = e.getPlayer();
+
+        final ForceBlock forceBlock = ForceBlockManager.getInstance().getForceBlock(block.getLocation());
+
+        if (forceBlock == null)
+            return;
+
+        e.setCancelled(true);
+
+        final List<Item> itemEntities = e.getItems();
+        final Map<Location, ItemStack> items = itemEntities.stream().map(itemEntity -> {
+            final Location location = itemEntity.getLocation();
+            final ItemStack itemStack = itemEntity.getItemStack();
+
+            return new AbstractMap.SimpleEntry<>(location, ForceBlockListeners.apply(itemStack, forceBlock));
+        }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        itemEntities.clear();
+
+        for (Map.Entry<Location, ItemStack> entry : items.entrySet()) {
+            final ItemStack item = entry.getValue();
+            player.getInventory().addItem(new ItemStack[]{item});
+        }
+
         forceBlock.delete(player);
     }
 

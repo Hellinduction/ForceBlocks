@@ -20,8 +20,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.util.BlockIterator;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 public final class ReachCommand implements Listener {

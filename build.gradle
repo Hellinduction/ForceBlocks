@@ -3,20 +3,17 @@ buildscript {
         mavenCentral()
         gradlePluginPortal()
     }
-    dependencies {
-        classpath "gradle.plugin.com.github.johnrengelman:shadow:7.1.2"
-    }
 }
 
 plugins {
     id 'java'
+    id("io.github.goooler.shadow") version "8.1.7"
 }
 
 apply plugin: 'java'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 group = 'club.hellin'
-version = '1.1.5-SNAPSHOT'
+version = '1.1.7-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -43,7 +40,8 @@ dependencies {
     compileOnly "org.spigotmc:spigot-api:1.20-R0.1-SNAPSHOT"
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
-    implementation "de.tr7zw:item-nbt-api:2.12.3"
+    implementation "de.tr7zw:item-nbt-api:2.12.4"
+//    implementation files("C:\\Users\\josep\\Desktop\\Minigames\\Item-NBT-API\\item-nbt-api\\target\\item-nbt-api-2.12.4-SNAPSHOT.jar")
     implementation files("C:\\Users\\josep\\Desktop\\Minigames\\drink\\target\\drink-1.0.5-shaded.jar")
     implementation "com.github.Exlll.ConfigLib:configlib-core:v4.2.0"
     implementation "com.github.Exlll.ConfigLib:configlib-paper:v4.2.0"
@@ -51,7 +49,7 @@ dependencies {
     compileOnly "com.github.decentsoftware-eu:decentholograms:2.8.6"
     implementation group: 'org.json', name: 'json', version: '20240303'
     compileOnly 'me.clip:placeholderapi:2.11.4'
-    implementation 'com.github.patheloper.pathetic:pathetic-mapping:2.4.1'
+    implementation 'com.github.patheloper.pathetic:pathetic-mapping:2.4.2'
     implementation "commons-codec:commons-codec:1.15"
 }
 
@@ -61,13 +59,14 @@ shadowJar {
     minimize()
 }
 
-def targetJavaVersion = 8
+def targetJavaVersion = 21
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion
     targetCompatibility = javaVersion
     if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+        toolchain.languageVersion.set(JavaLanguageVersion.of(targetJavaVersion))
+//        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
     }
 }
 

@@ -32,21 +32,25 @@ public final class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        PatheticMapper.initialize(instance);
+        try {
+            PatheticMapper.initialize(instance);
 
-        this.pathfinder = PatheticMapper.newPathfinder(PathingRuleSet.createAsyncRuleSet()
-                .withAllowingFailFast(true)
-                .withAllowingFallback(true)
-                .withLoadingChunks(true)
-                .withAllowingDiagonal(false)
-                .withHeuristicWeights(HeuristicWeights.create(0.6, 0.15, 0.2, 0.3)));
+            this.pathfinder = PatheticMapper.newPathfinder(PathingRuleSet.createAsyncRuleSet()
+                    .withAllowingFailFast(true)
+                    .withAllowingFallback(true)
+                    .withLoadingChunks(true)
+                    .withAllowingDiagonal(false)
+                    .withHeuristicWeights(HeuristicWeights.create(0.6, 0.15, 0.2, 0.3)));
 
-        this.playerPathfinder = PatheticMapper.newPathfinder(PathingRuleSet.createAsyncRuleSet()
-                .withAllowingFailFast(false)
-                .withAllowingFallback(true)
-                .withLoadingChunks(true)
-                .withAllowingDiagonal(false)
-                .withHeuristicWeights(HeuristicWeights.DIRECT_PATH_WEIGHTS));
+            this.playerPathfinder = PatheticMapper.newPathfinder(PathingRuleSet.createAsyncRuleSet()
+                    .withAllowingFailFast(false)
+                    .withAllowingFallback(true)
+                    .withLoadingChunks(true)
+                    .withAllowingDiagonal(false)
+                    .withHeuristicWeights(HeuristicWeights.DIRECT_PATH_WEIGHTS));
+        } catch (final Exception exception) {
+            exception.printStackTrace();
+        }
 
         this.registerListeners();
         this.registerCommands();
