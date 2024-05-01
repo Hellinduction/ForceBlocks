@@ -32,6 +32,7 @@ public enum ForceMode implements InventoryItemProvider {
         }
 
         input = input.toLowerCase();
+        input = input.replace("_", " ");
 
         final StringBuilder titleCase = new StringBuilder();
         boolean nextTitleCase = true;
@@ -51,8 +52,9 @@ public enum ForceMode implements InventoryItemProvider {
 
     @Override
     public ItemStack provide() {
-        final ChatColor color = this == ForceMode.OFF ? ChatColor.RED : ChatColor.YELLOW;
-        final String name = toTitleCase(this.name());
+        final boolean isOff = this == ForceMode.OFF;
+        final ChatColor color = isOff ? ChatColor.RED : ChatColor.YELLOW;
+        final String name = isOff ? this.name() : toTitleCase(this.name()).replace(" ", "");
         return new ItemStackBuilder(this.getMaterial()).addEnchant(Enchantment.KNOCKBACK).hideEnchants().setDisplayName(String.format("&7&lMode: %s&l%s", color, name)).build();
     }
 }
