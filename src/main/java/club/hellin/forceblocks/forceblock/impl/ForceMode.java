@@ -26,12 +26,14 @@ public enum ForceMode implements InventoryItemProvider {
         return ForceMode.values()[nextIndex];
     }
 
-    public static String toTitleCase(final String input) {
+    public static String toTitleCase(String input) {
         if (input == null || input.isEmpty()) {
             return input;
         }
 
-        StringBuilder titleCase = new StringBuilder();
+        input = input.toLowerCase();
+
+        final StringBuilder titleCase = new StringBuilder();
         boolean nextTitleCase = true;
 
         for (char c : input.toCharArray()) {
