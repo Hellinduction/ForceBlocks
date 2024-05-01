@@ -291,7 +291,7 @@ public final class ForceBlock implements ForceBlockBase {
     }
 
     private boolean isOff() {
-        return this.getConfig().getMode() == ForceMode.OFF;
+        return this.getConfig().getMode() == ForceMode.OFF || this.isDeleted();
     }
 
     @Override
@@ -302,6 +302,12 @@ public final class ForceBlock implements ForceBlockBase {
 //        final List<Location> blocks = this.getSphere();
 
         if (this.particlesDisplaying)
+            return;
+
+        final Location loc = this.getLocation();
+        final Chunk chunk = loc.getChunk();
+
+        if (!chunk.isLoaded())
             return;
 
 //        if (blocks.isEmpty())
@@ -316,7 +322,7 @@ public final class ForceBlock implements ForceBlockBase {
 //        });
 
         final Particle particle = Particle.HEART;
-        final Location center = ForceBlockListeners.center(this.getLocation().clone());
+        final Location center = ForceBlockListeners.center(loc.clone());
         final Location originalCenter = center.clone();
 
         center.add(0, 5, 0);

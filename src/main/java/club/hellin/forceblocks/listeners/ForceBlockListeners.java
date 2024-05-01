@@ -9,6 +9,7 @@ import club.hellin.forceblocks.forceblock.impl.ForceMode;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -18,6 +19,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -245,6 +248,32 @@ public final class ForceBlockListeners implements Listener {
         }
 
         forceBlock.openGui(player);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityChangeBlock(final EntityChangeBlockEvent e) {
+        final Block block = e.getBlock();
+
+        final ForceBlock forceBlock = ForceBlockManager.getInstance().getForceBlock(block.getLocation());
+
+        if (forceBlock == null)
+            return;
+
+        e.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityExplode(final EntityExplodeEvent e) {
+        final List<Block> blocks = e.blockList();
+
+        for (final Block block : new ArrayList<>(blocks)) {
+            final ForceBlock forceBlock = ForceBlockManager.getInstance().getForceBlock(block.getLocation());
+
+            if (forceBlock == null)
+                continue;
+
+            blocks.remove(block);
+        }
     }
 
 //    private Location floorLocation(final Location location) {
