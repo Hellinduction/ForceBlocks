@@ -31,6 +31,8 @@ import java.util.*;
 @Getter
 @ToString
 public final class ForceBlock implements ForceBlockBase {
+    public static final Material DEFAULT_MATERIAL = Material.CRYING_OBSIDIAN;
+
     private static final double PUSH_STRENGTH = 1.2D;
     private static final double PULL_STRENGTH = 1.2D;
     private static final double WHIRLPOOL_STRENGTH = 0.3;
@@ -50,12 +52,13 @@ public final class ForceBlock implements ForceBlockBase {
     private boolean particlesDisplaying;
     private boolean deleted;
 
-    public ForceBlock(final Location location, final int radius, final UUID owner) {
+    public ForceBlock(final Location location, final int radius, final UUID owner, final Material material) {
         this.config = new ForceBlockConfig();
 
         this.config.setLocation(location);
         this.config.setRadius(radius);
         this.config.setOwner(owner);
+        this.config.setMaterial(material);
 
         this.hologram = this.spawnHologram();
         this.save();
@@ -66,6 +69,18 @@ public final class ForceBlock implements ForceBlockBase {
     public ForceBlock(final ForceBlockConfig config) {
         this.config = config;
         this.hologram = this.spawnHologram();
+
+        if (this.config.getMaterial() == null) {
+            final Location loc = this.getLocation();
+            final Block block = loc.getBlock();
+
+            if (block == null || block.getType() == Material.AIR)
+                this.config.setMaterial(DEFAULT_MATERIAL);
+            else
+                this.config.setMaterial(block.getType());
+
+            this.save();
+        }
 
         ForceBlockManager.getInstance().register(this);
     }
@@ -223,7 +238,7 @@ public final class ForceBlock implements ForceBlockBase {
                 continue;
 
             final ForceBlock forceBlock = ForceBlockManager.getInstance().getClosestForceBlock(entity.getLocation());
-            if (forceBlock != null && !forceBlock.equals(this))
+            if (forceBlock != null && !forceBlock.equals(this) && !forceBlock.isOff())
                 continue;
 
             if ((this.isPermitted(entity.getUniqueId()) && !this.config.isAffectTrustedPlayers()) || GeneralConfig.getInstance().getBypassList().contains(entity.getUniqueId()))

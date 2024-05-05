@@ -5,6 +5,7 @@ import de.exlll.configlib.Configuration;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Location;
+import org.bukkit.Material;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,9 @@ public final class ForceBlockConfig {
 
     @Comment("Owner of this Force Block")
     private UUID owner; // Who placed it
+
+    @Comment("Material of this Force Block")
+    private Material material;
 
     @Comment("List of people besides the owner that are allowed to enter the area protected by the Force Block")
     private List<UUID> trusted = new ArrayList<>();

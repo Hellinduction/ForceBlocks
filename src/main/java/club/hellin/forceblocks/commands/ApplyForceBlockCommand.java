@@ -38,7 +38,7 @@ public final class ApplyForceBlockCommand {
             return;
         }
 
-        if (hand.getType().getHardness() < Material.OBSIDIAN.getHardness()) {
+        if (!canBeForceBlock(hand.getType())) {
             p.sendMessage(ChatColor.RED + "The material is not hard enough to be a Force Block.");
             return;
         }
@@ -49,6 +49,10 @@ public final class ApplyForceBlockCommand {
         p.updateInventory();
 
         p.sendMessage(ChatColor.GREEN + String.format("Applied force to your %s.", hand.getType().name()));
+    }
+
+    public static boolean canBeForceBlock(final Material material) {
+        return material.getHardness() >= Material.OBSIDIAN.getHardness();
     }
 
     public static ItemStack apply(ItemStack item, final int radius) {

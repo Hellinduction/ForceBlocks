@@ -9,18 +9,15 @@ import club.hellin.forceblocks.forceblock.impl.ForceMode;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockDropItemEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.block.*;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -43,15 +40,40 @@ public final class ForceBlockListeners implements Listener {
     private final Map<UUID, Long> lastInteraction = new HashMap<>();
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockPistonExtend(final BlockPistonExtendEvent e) {
+        this.handlePiston(e, e.getBlocks());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockPistonRetract(final BlockPistonRetractEvent e) {
+        this.handlePiston(e, e.getBlocks());
+    }
+
+    private void handlePiston(final BlockPistonEvent e, List<Block> blocks) {
+        final Block block = e.getBlock();
+        final BlockFace face = e.getDirection();
+
+        blocks = new ArrayList<>(blocks);
+        blocks.add(block);
+
+        final boolean involved = blocks.stream().anyMatch(b -> ForceBlockManager.getInstance().getForceBlock(b.getLocation()) != null || ForceBlockManager.getInstance().getForceBlock(b.getRelative(face).getLocation()) != null);
+
+        if (!involved)
+            return;
+
+        e.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockPlace(final BlockPlaceEvent e) {
         final ItemStack item = e.getItemInHand();
         final Player player = e.getPlayer();
         final UUID uuid = player.getUniqueId();
         final Block block = e.getBlock();
 
-        final ForceBlock fb = ForceBlockManager.getInstance().getForceBlock(e.getBlockAgainst().getLocation());
+        final ForceBlock placedAgainstFb = ForceBlockManager.getInstance().getForceBlock(e.getBlockAgainst().getLocation());
 
-        if (fb != null) {
+        if (placedAgainstFb != null) {
             e.setCancelled(true);
             return;
         }
@@ -63,12 +85,25 @@ public final class ForceBlockListeners implements Listener {
             return;
 
         final NBTItem nbt = new NBTItem(item);
+        final boolean isForceBlock = nbt.hasKey(Main.NBT_RADIUS_TAG);
 
-        if (!nbt.hasKey(Main.NBT_RADIUS_TAG))
+        final ForceBlock fb = ForceBlockManager.getInstance().getForceBlock(block.getLocation());
+
+        if (fb != null && (isForceBlock || !ApplyForceBlockCommand.canBeForceBlock(item.getType()))) {
+            if (isForceBlock)
+                player.sendMessage(ChatColor.RED + "You cant do that :/");
+            else
+                player.sendMessage(ChatColor.RED + "The material is not hard enough to be a Force Block.");
+
+            e.setCancelled(true);
+            return;
+        }
+
+        if (!isForceBlock)
             return;
 
         final int radius = nbt.getInteger(Main.NBT_RADIUS_TAG);
-        final ForceBlock forceBlock = new ForceBlock(block.getLocation(), radius, uuid);
+        final ForceBlock forceBlock = new ForceBlock(block.getLocation(), radius, uuid, item.getType());
 
         if (nbt.hasTag(NBT_TRUSTED_TAG) && nbt.hasTag(NBT_MODE_TAG)) {
             final String trustedJson = nbt.getString(NBT_TRUSTED_TAG);
@@ -123,6 +158,9 @@ public final class ForceBlockListeners implements Listener {
             e.setCancelled(true);
         }
 
+        forceBlock.getConfig().setMaterial(block.getType());
+        forceBlock.save();
+
 //        final Material type = block.getType();
 //        ItemStack item = new ItemStack(type);
 //        item = apply(item, forceBlock);
@@ -164,6 +202,7 @@ public final class ForceBlockListeners implements Listener {
     @EventHandler(priority=EventPriority.MONITOR, ignoreCancelled=true)
     public void onBlockDropItem(final BlockDropItemEvent e) {
         final Block block = e.getBlock();
+        final Location loc = block.getLocation();
         final Player player = e.getPlayer();
 
         final ForceBlock forceBlock = ForceBlockManager.getInstance().getForceBlock(block.getLocation());
@@ -183,12 +222,69 @@ public final class ForceBlockListeners implements Listener {
 
         itemEntities.clear();
 
-        for (Map.Entry<Location, ItemStack> entry : items.entrySet()) {
+        for (Map.Entry<Location, ItemStack> entry : new ArrayList<>(items.entrySet())) {
             final ItemStack item = entry.getValue();
-            player.getInventory().addItem(new ItemStack[]{item});
+            item.setType(forceBlock.getConfig().getMaterial());
+
+            final Map<Integer, ItemStack> result = player.getInventory().addItem(new ItemStack[]{ item });
+
+            if (result.values().stream().anyMatch(i -> i.isSimilar(item))) {
+                e.setCancelled(false);
+                e.getItems().clear();
+
+                loc.getWorld().dropItemNaturally(loc, item);
+                break;
+            }
         }
 
         forceBlock.delete(player);
+    }
+
+    private boolean isForceBlock(final Item itemEntity) {
+        final ItemStack item = itemEntity.getItemStack();
+
+        if (item == null || item.getType() == Material.AIR)
+            return false;
+
+        if (!item.getType().isBlock())
+            return false;
+
+        final NBTItem nbt = new NBTItem(item);
+        final boolean isForceBlock = nbt.hasKey(Main.NBT_RADIUS_TAG);
+
+        return isForceBlock;
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityDamage(final EntityDamageEvent e) {
+        final Entity entity = e.getEntity();
+
+        if (!(entity instanceof Item))
+            return;
+
+        final Item itemEntity = (Item) entity;
+        final boolean isForceBlock = this.isForceBlock(itemEntity);
+
+        if (!isForceBlock)
+            return;
+
+        e.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onItemDespawn(final ItemDespawnEvent e) {
+        final Entity entity = e.getEntity();
+
+        if (!(entity instanceof Item))
+            return;
+
+        final Item itemEntity = (Item) entity;
+        final boolean isForceBlock = this.isForceBlock(itemEntity);
+
+        if (!isForceBlock)
+            return;
+
+        e.setCancelled(true);
     }
 
 //    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -262,10 +358,17 @@ public final class ForceBlockListeners implements Listener {
         e.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityExplode(final EntityExplodeEvent e) {
-        final List<Block> blocks = e.blockList();
+        this.handleExplosion(e.blockList());
+    }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockExplode(final BlockExplodeEvent e) {
+        this.handleExplosion(e.blockList());
+    }
+
+    private void handleExplosion(final List<Block> blocks) {
         for (final Block block : new ArrayList<>(blocks)) {
             final ForceBlock forceBlock = ForceBlockManager.getInstance().getForceBlock(block.getLocation());
 
