@@ -225,6 +225,7 @@ public final class ForceBlockListeners implements Listener {
         for (Map.Entry<Location, ItemStack> entry : new ArrayList<>(items.entrySet())) {
             final ItemStack item = entry.getValue();
             item.setType(forceBlock.getConfig().getMaterial());
+            item.setAmount(1);
 
             final Map<Integer, ItemStack> result = player.getInventory().addItem(new ItemStack[]{ item });
 
@@ -233,8 +234,9 @@ public final class ForceBlockListeners implements Listener {
                 e.getItems().clear();
 
                 loc.getWorld().dropItemNaturally(loc, item);
-                break;
             }
+
+            break;
         }
 
         forceBlock.delete(player);
