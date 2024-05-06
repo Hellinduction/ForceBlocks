@@ -1,5 +1,5 @@
 name: ForceBlocks
-version: '1.1.8-SNAPSHOT'
+version: '1.1.9-SNAPSHOT'
 main: club.hellin.forceblocks.Main
 api-version: 1.13
 load: POSTWORLD
