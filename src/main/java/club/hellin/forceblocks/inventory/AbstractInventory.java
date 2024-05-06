@@ -202,6 +202,11 @@ public abstract class AbstractInventory implements InventoryBase {
         return session.getAttachment();
     }
 
+    public OpenSession getSession(final Player player) {
+        final UUID uuid = player.getUniqueId();
+        return this.open.get(uuid);
+    }
+
     public void updateAll() {
         for (final UUID uuid : this.open.keySet()) {
             final Player player = Bukkit.getPlayer(uuid);

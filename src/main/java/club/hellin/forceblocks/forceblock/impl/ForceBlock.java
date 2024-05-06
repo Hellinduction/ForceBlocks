@@ -8,7 +8,6 @@ import club.hellin.forceblocks.inventory.InventoryManager;
 import club.hellin.forceblocks.inventory.impl.ForceBlockInventory;
 import club.hellin.forceblocks.listeners.ForceBlockListeners;
 import club.hellin.forceblocks.utils.GeneralConfig;
-import club.hellin.forceblocks.utils.WorldEditUtils;
 import de.exlll.configlib.YamlConfigurations;
 import eu.decentsoftware.holograms.api.DHAPI;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
@@ -22,7 +21,6 @@ import org.bukkit.entity.minecart.ExplosiveMinecart;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.io.File;
@@ -49,7 +47,7 @@ public final class ForceBlock implements ForceBlockBase {
     private long second = 0;
     private Hologram hologram;
 //    private List<BukkitTask> particleTasks = new ArrayList<>();
-    private boolean particlesDisplaying;
+    private boolean particlesDisplaying; // Used to check if particles from previous BukkitRunnable are still being displayed
     private boolean deleted;
 
     public ForceBlock(final Location location, final int radius, final UUID owner, final Material material) {
@@ -86,6 +84,9 @@ public final class ForceBlock implements ForceBlockBase {
     }
 
     private Hologram spawnHologram() {
+        if (!this.config.isDisplayHologram())
+            return null;
+
         Location loc = this.getLocation();
 
         loc = loc.clone().add(0, 2, 0);
@@ -114,6 +115,18 @@ public final class ForceBlock implements ForceBlockBase {
         return name;
     }
 
+    public void toggleHologram() {
+        this.config.setDisplayHologram(!this.config.isDisplayHologram());
+        this.save();
+
+        final boolean displayHologram = this.config.isDisplayHologram();
+
+        if (displayHologram)
+            this.hologram = this.spawnHologram();
+        else
+            this.deleteHologram();
+    }
+
     @Override
     public Location getLocation() {
         return this.config.getLocation();
@@ -125,15 +138,19 @@ public final class ForceBlock implements ForceBlockBase {
 
         this.deleted = true;
 
-        if (this.hologram != null) {
-            this.hologram.hideAll();
-            this.hologram.delete();
-        }
+        this.deleteHologram();
 
         this.particlesDisplaying = false;
 
         this.getConfigFile().delete();
         ForceBlockManager.getInstance().remove(this);
+    }
+
+    public void deleteHologram() {
+        if (this.hologram != null) {
+            this.hologram.hideAll();
+            this.hologram.delete();
+        }
     }
 
     public void closeAll() {
@@ -223,6 +240,56 @@ public final class ForceBlock implements ForceBlockBase {
         return false;
     }
 
+    private boolean isForceBlockCloser(final Entity entity) {
+        final Location loc = entity.getLocation();
+        final ForceBlock thisForceBlock = this;
+        final ForceBlock closestForceBlock = ForceBlockManager.getInstance().getClosestForceBlock(loc);
+
+        if (closestForceBlock == null || closestForceBlock.equals(thisForceBlock) || closestForceBlock.isOff())
+            return false;
+
+        final double thisDist = thisForceBlock.getLocation().distance(loc);
+        final double closestDist = closestForceBlock.getLocation().distance(loc);
+        final double thisRadius = thisForceBlock.getConfig().getRadius();
+        final double closestRadius = closestForceBlock.getConfig().getRadius();
+
+        if (thisRadius > closestRadius * 2)
+            return false;
+
+        // If the closest force block is larger and closer or equally close, return true
+        if (closestRadius > thisRadius && closestDist <= closestRadius)
+            return true;
+            // If the current force block is larger and closer or equally close, return false
+        else if (thisRadius > closestRadius && thisDist <= thisRadius)
+            return false;
+            // Otherwise, return based on distance only
+        else
+            return closestDist < thisDist;
+    }
+
+    private boolean allowedAsPermitted(final Entity entity) {
+        final UUID uuid = entity.getUniqueId();
+
+        final boolean isOwner = this.isOwner(uuid);
+        final boolean affectOwner = this.config.isAffectOwner();
+        final boolean affectedTrusted = this.config.isAffectTrustedPlayers();
+
+        if (isOwner) {
+            if (!affectOwner)
+                return true;
+
+            if (affectOwner && !affectedTrusted)
+                return false;
+        }
+
+        final boolean isPermitted = this.isPermitted(uuid);
+
+        if (isPermitted && !affectedTrusted)
+            return true;
+
+        return false;
+    }
+
     @Override
     public void tick() {
         final Location loc = this.getLocation();
@@ -231,17 +298,23 @@ public final class ForceBlock implements ForceBlockBase {
         if (!chunk.isLoaded())
             return;
 
-        final int radius = this.config.getRadius() * 2; // Times by 2 to ensure we capture all players within the sphere
+        final int radius = this.config.getRadius();
 
         for (Entity entity : loc.getWorld().getNearbyEntities(loc, radius, radius / 2, radius)) {
             if (!this.pushEntity(entity))
                 continue;
 
-            final ForceBlock forceBlock = ForceBlockManager.getInstance().getClosestForceBlock(entity.getLocation());
-            if (forceBlock != null && !forceBlock.equals(this) && !forceBlock.isOff())
+//            final ForceBlock forceBlock = ForceBlockManager.getInstance().getClosestForceBlock(entity.getLocation());
+//
+//            if (forceBlock != null && !forceBlock.equals(this) && !forceBlock.isOff())
+//                continue;
+
+            final boolean isForceBlockCloser = this.isForceBlockCloser(entity);
+
+            if (isForceBlockCloser)
                 continue;
 
-            if ((this.isPermitted(entity.getUniqueId()) && !this.config.isAffectTrustedPlayers()) || GeneralConfig.getInstance().getBypassList().contains(entity.getUniqueId()))
+            if (this.allowedAsPermitted(entity) || GeneralConfig.getInstance().getBypassList().contains(entity.getUniqueId()))
                 continue;
 
             // Deflecting projectiles
@@ -319,6 +392,9 @@ public final class ForceBlock implements ForceBlockBase {
         if (this.particlesDisplaying)
             return;
 
+        if (!this.config.isDisplayParticles())
+            return;
+
         final Location loc = this.getLocation();
         final Chunk chunk = loc.getChunk();
 
@@ -375,7 +451,7 @@ public final class ForceBlock implements ForceBlockBase {
 
                 final double dist = this.loc.distance(originalCenter);
 
-                if (dist < 1.1D || isOff()) {
+                if (dist < 1.1D || isOff() || !config.isDisplayParticles()) {
                     super.cancel();
                     particlesDisplaying = false;
                     return;

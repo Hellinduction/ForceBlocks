@@ -83,6 +83,41 @@ public final class ForceBlockSettingsInventory extends CaseByCaseInventory {
         block.save();
     }
 
+    @InventoryToggleHandler(name = "&bHologram")
+    public void toggleHologram(final InventoryClick click) {
+        final Player player = click.getWhoClicked();
+        final ForceBlock block = this.getForceBlock(player, true);
+
+        if (block == null)
+            return;
+
+        block.toggleHologram();
+    }
+
+    @InventoryToggleHandler(name = "&bParticles")
+    public void toggleParticles(final InventoryClick click) {
+        final Player player = click.getWhoClicked();
+        final ForceBlock block = this.getForceBlock(player, true);
+
+        if (block == null)
+            return;
+
+        block.getConfig().setDisplayParticles(!block.getConfig().isDisplayParticles());
+        block.save();
+    }
+
+    @InventoryToggleHandler(name = "&bOwner")
+    public void toggleAffectOwner(final InventoryClick click) {
+        final Player player = click.getWhoClicked();
+        final ForceBlock block = this.getForceBlock(player, true);
+
+        if (block == null)
+            return;
+
+        block.getConfig().setAffectOwner(!block.getConfig().isAffectOwner());
+        block.save();
+    }
+
     private ForceBlock getForceBlock(final Player player, final boolean sendFailure) {
         final ForceBlock forceBlock = super.getAttachment(player);
 
@@ -128,6 +163,18 @@ public final class ForceBlockSettingsInventory extends CaseByCaseInventory {
 
             case "PROJECTILES": {
                 return config.isAffectProjectiles();
+            }
+
+            case "HOLOGRAM": {
+                return config.isDisplayHologram();
+            }
+
+            case "PARTICLES": {
+                return config.isDisplayParticles();
+            }
+
+            case "OWNER": {
+                return config.isAffectOwner();
             }
         }
 

@@ -37,8 +37,6 @@ public final class GeneralConfig {
     @Comment("Weather or not the Projectile Aimbot should path find")
     private boolean pathFind = false;
 
-    private int bestCounterOfAllTime = 0;
-
     private static File getConfigFile() {
         return new File(Main.instance.getDataFolder(), "config.yml");
     }

@@ -64,7 +64,7 @@ public final class Main extends JavaPlugin {
     @Override
     public void onDisable() {
         PatheticMapper.shutdown();
-        ForceBlockManager.getInstance().closeAllInventories();
+        ForceBlockManager.getInstance().shutdown();
     }
 
     private void registerListeners() {

@@ -58,7 +58,7 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
             if (provider == null)
                 return null;
 
-            ItemStack item = provider.provide();
+            ItemStack item = provider.provide(player, super.getInventory());
             item = super.getInventory().tag(item);
             item = super.getInventory().tag(item, super.getIndex());
 
@@ -116,7 +116,7 @@ public abstract class CaseByCaseInventory extends AbstractInventory {
 
         int currentIndex = 1;
 
-        for (final Method method : clazz.getDeclaredMethods()) {
+        for (final Method method : Arrays.stream(clazz.getDeclaredMethods()).sorted(Comparator.comparing(method -> method.getName())).collect(Collectors.toList())) {
             if (method.getParameters().length != 1 || method.getAnnotations().length == 0)
                 continue;
 

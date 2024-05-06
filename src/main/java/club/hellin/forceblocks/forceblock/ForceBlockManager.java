@@ -56,7 +56,11 @@ public final class ForceBlockManager extends ComponentManager<ForceBlock> {
         }, 20L, 20L);
 
         Bukkit.getScheduler().runTaskTimer(Main.instance, () -> {
-            for (final ForceBlock block : super.get())
+            final List<ForceBlock> blocks = super.get();
+
+            Collections.sort(blocks, Comparator.comparing(block -> block.getConfig().getRadius()));
+
+            for (final ForceBlock block : blocks)
                 block.tick();
         }, 0L, 1L);
     }
@@ -143,8 +147,18 @@ public final class ForceBlockManager extends ComponentManager<ForceBlock> {
         return null;
     }
 
+    public void shutdown() {
+        this.closeAllInventories();
+        this.deleteHolograms();
+    }
+
     public void closeAllInventories() {
         for (final ForceBlock block : super.get())
             block.closeAll();
+    }
+
+    public void deleteHolograms() {
+        for (final ForceBlock block : super.get())
+            block.deleteHologram();
     }
 }

@@ -51,6 +51,7 @@ dependencies {
     compileOnly 'me.clip:placeholderapi:2.11.4'
     implementation 'com.github.patheloper.pathetic:pathetic-mapping:2.4.2'
     implementation "commons-codec:commons-codec:1.15"
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.14.1'
 }
 
 shadowJar {
