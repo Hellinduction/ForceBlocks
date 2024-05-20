@@ -31,6 +31,9 @@ public final class GeneralConfig {
     @Comment("List of players with projectile aimbot enabled")
     private List<UUID> projectileAimbotToggledOn = new ArrayList<>();
 
+    @Comment("List of players with carrier parrot enabled")
+    private List<UUID> carrierParrot = new ArrayList<>();
+
     @Comment("The map of players to their reach value")
     private Map<UUID, Double> reachMap = new HashMap<>();
 

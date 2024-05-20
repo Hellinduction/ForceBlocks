@@ -83,6 +83,7 @@ public final class Main extends JavaPlugin {
         service.register(new ProjectileAimbotCommand(), "projectileaimbot");
         service.register(new ReachCommand(), "reach");
         service.register(new BypassForceBlockCommand(), "bypassforceblock");
+        service.register(new CarrierParrotCommand(), "carrierparrot");
 //        service.register(new OpenInventoryCommand(), "openinventory");
 
         service.registerCommands();
