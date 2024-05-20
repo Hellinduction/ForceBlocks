@@ -29,7 +29,6 @@ import java.util.UUID;
 
 public final class CarrierParrotCommand implements Listener {
     private static final String PERMISSION = "forceblock.carrierparrot";
-    private static final int REMOVE_AT_DISTANCE = 8;
 
     private static boolean registeredListeners = false;
 
@@ -103,10 +102,10 @@ public final class CarrierParrotCommand implements Listener {
 
         Bukkit.getScheduler().runTask(Main.instance, () -> parrot.addPassenger(player));
 
-        this.checkIfReachedDestination(entity, loc);
+        this.check(entity);
     }
 
-    private void checkIfReachedDestination(final Entity entity, final Location destination) {
+    private void check(final Entity entity) {
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -118,19 +117,7 @@ public final class CarrierParrotCommand implements Listener {
                 if (entity.getPassengers().isEmpty()) {
                     entity.remove();
                     super.cancel();
-                    return;
                 }
-
-                final Location loc = entity.getLocation();
-                final double dist = loc.distance(destination);
-
-                if (dist > REMOVE_AT_DISTANCE)
-                    return;
-
-                entity.eject();
-                entity.remove();
-
-                super.cancel();
             }
         }.runTaskTimer(Main.instance, 20L, 20L);
     }
