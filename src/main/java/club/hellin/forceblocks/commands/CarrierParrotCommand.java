@@ -15,6 +15,7 @@ import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Parrot;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -25,10 +26,12 @@ import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.Random;
 import java.util.UUID;
 
 public final class CarrierParrotCommand implements Listener {
     private static final String PERMISSION = "forceblock.carrierparrot";
+    private static final float REMOVE_AT = 1.5F;
 
     private static boolean registeredListeners = false;
 
@@ -100,12 +103,25 @@ public final class CarrierParrotCommand implements Listener {
 
         final Entity entity = parrot.getBukkitEntity();
 
+        if (entity instanceof Parrot) {
+            final Parrot parrotEntity = (Parrot) entity;
+            final Parrot.Variant variant = this.getRandomVariant();
+
+            parrotEntity.setVariant(variant);
+            parrotEntity.setAdult();
+        }
+
         Bukkit.getScheduler().runTask(Main.instance, () -> parrot.addPassenger(player));
 
-        this.check(entity);
+        this.check(entity, loc);
     }
 
-    private void check(final Entity entity) {
+    private Parrot.Variant getRandomVariant() {
+        final Random random = new Random();
+        return Parrot.Variant.values()[random.nextInt(Parrot.Variant.values().length)];
+    }
+
+    private void check(final Entity entity, final Location destination) {
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -118,6 +134,15 @@ public final class CarrierParrotCommand implements Listener {
                     entity.remove();
                     super.cancel();
                 }
+
+                final Location loc = entity.getLocation();
+                final double dist = loc.distance(destination);
+
+                if (dist > REMOVE_AT)
+                    return;
+
+                entity.remove();
+                super.cancel();
             }
         }.runTaskTimer(Main.instance, 20L, 20L);
     }

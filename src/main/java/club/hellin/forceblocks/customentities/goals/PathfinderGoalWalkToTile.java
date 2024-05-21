@@ -21,7 +21,7 @@ public final class PathfinderGoalWalkToTile extends PathfinderGoal {
     public boolean a() {
         final NavigationAbstract navigation = this.entity.N();
 
-        this.path = navigation.a(loc.getX(), loc.getY(), loc.getZ(), 10);
+        this.path = navigation.a(loc.getX(), loc.getY(), loc.getZ(), 1);
         this.entity.N();
 
         if (this.path != null)
