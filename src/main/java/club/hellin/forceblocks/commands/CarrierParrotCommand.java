@@ -31,7 +31,7 @@ import java.util.UUID;
 
 public final class CarrierParrotCommand implements Listener {
     private static final String PERMISSION = "forceblock.carrierparrot";
-    private static final float REMOVE_AT = 1.5F;
+    private static final float REMOVE_AT = 1F;
 
     private static boolean registeredListeners = false;
 
@@ -141,8 +141,7 @@ public final class CarrierParrotCommand implements Listener {
                 if (dist > REMOVE_AT)
                     return;
 
-                entity.remove();
-                super.cancel();
+                entity.eject();
             }
         }.runTaskTimer(Main.instance, 20L, 20L);
     }
