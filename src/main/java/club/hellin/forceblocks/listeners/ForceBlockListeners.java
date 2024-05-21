@@ -31,7 +31,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public final class ForceBlockListeners implements Listener {
-    private static final String PERMISSION = "forceblock.use";
     private static final String NBT_JSON_CONFIG_TAG = "force_block_json_config";
 
     private final Map<UUID, Long> lastInteraction = new HashMap<>();
@@ -98,19 +97,6 @@ public final class ForceBlockListeners implements Listener {
 
         if (!isForceBlock)
             return;
-
-        if (!player.hasPermission(PERMISSION)) {
-            for (final Player p : Bukkit.getOnlinePlayers()) {
-                if (!p.hasPermission("core.staff"))
-                    continue;
-
-                p.sendMessage(ChatColor.translateAlternateColorCodes('&', String.format("&c&l%s HAS A FORCE BLOCK REMOVE IT!", player.getName())));
-            }
-
-            player.sendMessage(ChatColor.RED + "You do not have permission to use this!");
-            e.setCancelled(true);
-            return;
-        }
 
         final int radius = nbt.getInteger(Main.NBT_RADIUS_TAG);
 
