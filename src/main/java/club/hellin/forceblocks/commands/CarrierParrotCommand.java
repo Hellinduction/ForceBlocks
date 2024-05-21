@@ -26,14 +26,20 @@ import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
 public final class CarrierParrotCommand implements Listener {
     private static final String PERMISSION = "forceblock.carrierparrot";
     private static final float REMOVE_AT = 1F;
+    private static final int REMOVE_AT_SECONDS_STATIONARY = 3;
 
     private static boolean registeredListeners = false;
+
+    private final Map<Integer, Double> distanceMap = new HashMap<>();
+    private final Map<Integer, Integer> countMap = new HashMap<>();
 
     public CarrierParrotCommand() {
         if (!registeredListeners) {
@@ -137,8 +143,16 @@ public final class CarrierParrotCommand implements Listener {
 
                 final Location loc = entity.getLocation();
                 final double dist = loc.distance(destination);
+                final double lastDist = distanceMap.getOrDefault(entity.getEntityId(), -1D);
 
-                if (dist > REMOVE_AT)
+                if (lastDist >= 0 && dist == lastDist)
+                    countMap.put(entity.getEntityId(), countMap.getOrDefault(entity.getEntityId(), 0) + 1);
+
+                distanceMap.put(entity.getEntityId(), dist);
+
+                final int count = countMap.getOrDefault(entity.getEntityId(), 0);
+
+                if (dist > REMOVE_AT && count < REMOVE_AT_SECONDS_STATIONARY)
                     return;
 
                 entity.eject();
