@@ -40,11 +40,6 @@ public final class ArrowPathfinderStrategy implements PathfinderStrategy {
                 return block.isPassable();
 
             final List<Block> blocks = new ArrayList<>(Arrays.asList(
-//                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(1, 0, 0))),
-//                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(0, 0, 1))),
-//                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(-1, 0, 0))),
-//                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(0, 0, -1))),
-
                     BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(1, 0, 1))),
                     BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(-1, 0, -1))),
                     BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(-1, 0, 1))),

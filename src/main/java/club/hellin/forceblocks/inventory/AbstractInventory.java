@@ -218,7 +218,7 @@ public abstract class AbstractInventory implements InventoryBase {
 
             if (view != null && this.isInventory(view) && view.getTopInventory() != null) {
                 final Inventory top = view.getTopInventory();
-                Bukkit.getScheduler().runTask(Main.instance, () -> this.setItems(player, top));
+                Main.instance.getScheduler().runTask(() -> this.setItems(player, top));
             }
         }
     }

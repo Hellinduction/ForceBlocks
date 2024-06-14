@@ -43,8 +43,6 @@ public interface ForceBlockBase {
         this.unTrust(player.getUniqueId());
     }
 
-//    List<Location> getSphere();
-
     boolean isOwner(final UUID uuid);
 
     default boolean isOwner(final OfflinePlayer player) {

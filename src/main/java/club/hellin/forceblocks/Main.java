@@ -9,6 +9,7 @@ import club.hellin.forceblocks.utils.papi.PapiInit;
 import com.jonahseguin.drink.CommandService;
 import com.jonahseguin.drink.Drink;
 import lombok.Getter;
+import me.nahu.scheduler.wrapper.FoliaWrappedJavaPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -18,7 +19,7 @@ import org.patheloper.api.pathing.configuration.PathingRuleSet;
 import org.patheloper.mapping.PatheticMapper;
 
 @Getter
-public final class Main extends JavaPlugin {
+public final class Main extends FoliaWrappedJavaPlugin {
     public static final String NBT_RADIUS_TAG = "force_block_radius";
 
     public static Main instance;
@@ -59,6 +60,15 @@ public final class Main extends JavaPlugin {
         InventoryManager.getInstance().init();
 
         PapiInit.initPapi();
+    }
+
+    public static boolean isFolia() {
+        try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     @Override

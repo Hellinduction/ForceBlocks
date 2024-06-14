@@ -19,10 +19,10 @@ public final class PathfinderGoalWalkToTile extends PathfinderGoal {
 
     @Override
     public boolean a() {
-        final NavigationAbstract navigation = this.entity.N();
+        final NavigationAbstract navigation = this.entity.K();
 
         this.path = navigation.a(loc.getX(), loc.getY(), loc.getZ(), 1);
-        this.entity.N();
+        this.entity.K();
 
         if (this.path != null)
             this.c();
@@ -32,6 +32,6 @@ public final class PathfinderGoalWalkToTile extends PathfinderGoal {
 
     @Override
     public void c() {
-        this.entity.N().a(this.path, 2D);
+        this.entity.K().a(this.path, 2D);
     }
 }

@@ -117,11 +117,8 @@ public final class ProjectileAimbotCommand implements Listener {
         if (!config.getProjectileAimbotToggledOn().contains(uuid))
             return;
 
-        if (config.isPathFind()) {
+        if (config.isPathFind())
             projectile.setVelocity(projectile.getVelocity().multiply(0.4));
-//            projectile.setVelocity(new Vector());
-//            projectile.setGravity(false);
-        }
 
         final Entity target = this.getTargetEntity(projectile, shooter);
 
@@ -215,13 +212,6 @@ public final class ProjectileAimbotCommand implements Listener {
 
         pathfinder.findPath(start, end, new ArrowPathfinderStrategy(targetLoc))
                 .thenAccept(pathfinderResult -> {
-//                    projectile.setGravity(true);
-//                    projectile.setVelocity(originalVelocity.multiply(0.4));
-//                    if (!pathfinderResult.successful()) {
-//                        projectile.remove();
-//                        return;
-//                    }
-
                     resultMap.put(projectile, pathfinderResult);
                     this.indexMap.remove(projectile);
 
@@ -241,7 +231,7 @@ public final class ProjectileAimbotCommand implements Listener {
         final Path path = result.getPath();
 
         PathPosition pos;
-        final Iterator<PathPosition> iterator = path.getPositions().iterator();
+        final Iterator<PathPosition> iterator = path.iterator();
 
         pos = this.getElementAtIndex(iterator, index);
 
@@ -268,53 +258,8 @@ public final class ProjectileAimbotCommand implements Listener {
         this.indexMap.put(projectile, index + 1);
     }
 
-//    private boolean affect(final Location loc) {
-//        final Block block = loc.getBlock();
-//
-////        if (block.getRelative(BlockFace.DOWN).getType().isSolid())
-////            return true;
-////        else if (block.getRelative(BlockFace.UP).getType().isSolid())
-////            return true;
-//        if (block.getRelative(BlockFace.NORTH).getType().isSolid())
-//            return true;
-//        else if (block.getRelative(BlockFace.EAST).getType().isSolid())
-//            return true;
-//        else if (block.getRelative(BlockFace.SOUTH).getType().isSolid())
-//            return true;
-//        else if (block.getRelative(BlockFace.WEST).getType().isSolid())
-//            return true;
-//
-//        return false;
-//    }
-
     private void handle(Location loc, final Location nearbyLoc, double speed, final Projectile projectile) {
         loc = ForceBlockListeners.center(loc);
-//        final boolean affected = this.affect(loc);
-//
-//        System.out.println(affected);
-//
-//        if (affected) {
-//            final List<Block> blocks = new ArrayList<>();
-//
-//            blocks.add(block.getRelative(BlockFace.DOWN));
-//            blocks.add(block.getRelative(BlockFace.UP));
-//            blocks.add(block.getRelative(BlockFace.NORTH));
-//            blocks.add(block.getRelative(BlockFace.EAST));
-//            blocks.add(block.getRelative(BlockFace.SOUTH));
-//            blocks.add(block.getRelative(BlockFace.WEST));
-//
-//            Block found = null;
-//
-//            for (final Block b : blocks) {
-//                if (!b.getType().isSolid()) {
-//                    found = b;
-//                    break;
-//                }
-//            }
-//
-//             if (found != null)
-//                 loc = found.getLocation();
-//        }
 
         final Vector direction = loc.toVector().subtract(nearbyLoc.toVector()).normalize();
         final Vector velocity = direction.multiply(speed);
@@ -327,11 +272,6 @@ public final class ProjectileAimbotCommand implements Listener {
 
         projectile.setVelocity(velocity);
     }
-
-//    private void mark(final Location loc) {
-//        for (final Player p : loc.getWorld().getPlayers())
-//            p.sendBlockChange(loc, Material.YELLOW_STAINED_GLASS.createBlockData());
-//    }
 
     private <T> T getElementAtIndex(final Iterator<T> iterator, final int index) {
         if (index < 0) {

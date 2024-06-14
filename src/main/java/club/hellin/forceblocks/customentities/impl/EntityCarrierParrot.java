@@ -6,15 +6,15 @@ import net.minecraft.world.entity.ai.goal.PathfinderGoalFloat;
 import net.minecraft.world.entity.ai.goal.PathfinderGoalSelector;
 import net.minecraft.world.entity.animal.EntityParrot;
 import org.bukkit.Location;
-import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_20_R4.CraftWorld;
+import org.bukkit.craftbukkit.v1_20_R4.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 public final class EntityCarrierParrot extends EntityParrot {
     private final Location target;
 
     public EntityCarrierParrot(final Location loc, final Location target) {
-        super(EntityTypes.au, ((CraftWorld) loc.getWorld()).getHandle());
+        super(EntityTypes.ax, ((CraftWorld) loc.getWorld()).getHandle());
 
         this.target = target;
 
@@ -25,7 +25,7 @@ public final class EntityCarrierParrot extends EntityParrot {
     public void init() {
         this.clearSelectors();
 
-        final PathfinderGoalSelector selector = super.bO;
+        final PathfinderGoalSelector selector = super.bS;
 
         selector.a(1, new PathfinderGoalFloat(this));
         selector.a(2, new PathfinderGoalWalkToTile(this, target));
@@ -36,7 +36,7 @@ public final class EntityCarrierParrot extends EntityParrot {
     }
 
     private void clearSelectors() {
-        super.bO.b().clear();
-        super.bP.b().clear();
+        super.bS.b().clear();
+        super.bS.b().clear();
     }
 }

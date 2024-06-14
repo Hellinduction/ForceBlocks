@@ -13,6 +13,8 @@ import eu.decentsoftware.holograms.api.DHAPI;
 import eu.decentsoftware.holograms.api.holograms.Hologram;
 import lombok.Getter;
 import lombok.ToString;
+import me.nahu.scheduler.wrapper.runnable.WrappedRunnable;
+import me.nahu.scheduler.wrapper.task.WrappedTask;
 import org.apache.commons.codec.binary.Base32;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -21,10 +23,18 @@ import org.bukkit.entity.minecart.ExplosiveMinecart;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Getter
 @ToString
@@ -39,16 +49,19 @@ public final class ForceBlock implements ForceBlockBase {
     public static final File DIR = new File(Main.instance.getDataFolder(), "blocks");
 
     private final Map<Projectile, UUID> originalShooterMap = new HashMap<>();
+    private final WrappedTask timer;
 
     private File configFile;
     private ForceBlockConfig config;
 
-//    private @ToString.Exclude List<Location> sphere;
     private long second = 0;
     private Hologram hologram;
-//    private List<BukkitTask> particleTasks = new ArrayList<>();
     private boolean particlesDisplaying; // Used to check if particles from previous BukkitRunnable are still being displayed
     private boolean deleted;
+    private int ticks = 0;
+
+    private Chunk chunk;
+    private CompletableFuture<List<Chunk>> surroundingChunks;
 
     public ForceBlock(final Location location, final int radius, final UUID owner, final Material material) {
         this.config = new ForceBlockConfig();
@@ -62,6 +75,8 @@ public final class ForceBlock implements ForceBlockBase {
         this.save();
 
         ForceBlockManager.getInstance().register(this);
+
+        this.timer = this.getTimer();
     }
 
     public ForceBlock(final ForceBlockConfig config) {
@@ -81,6 +96,17 @@ public final class ForceBlock implements ForceBlockBase {
         }
 
         ForceBlockManager.getInstance().register(this);
+
+        this.timer = this.getTimer();
+    }
+
+    private WrappedTask getTimer() {
+        return Main.instance.getScheduler().runTaskTimerAsynchronously(() -> {
+            if (this.ticks % 2 == 0)
+                Main.instance.getScheduler().runTaskAsynchronously(this::tick);
+            else
+                this.tick();
+        }, 1L, 1L);
     }
 
     private Hologram spawnHologram() {
@@ -144,6 +170,8 @@ public final class ForceBlock implements ForceBlockBase {
 
         this.getConfigFile().delete();
         ForceBlockManager.getInstance().remove(this);
+
+        this.timer.cancel();
     }
 
     public void deleteHologram() {
@@ -216,6 +244,9 @@ public final class ForceBlock implements ForceBlockBase {
             this.displayParticles();
 
         ++this.second;
+
+        System.out.println(this.ticks);
+        this.ticks = 0;
     }
 
     private boolean pushEntity(final Entity entity) {
@@ -290,92 +321,213 @@ public final class ForceBlock implements ForceBlockBase {
         return false;
     }
 
+    private CompletableFuture<Chunk> getChunkAsync(World world, int x, int z) {
+        CompletableFuture<Chunk> future = new CompletableFuture<>();
+        Main.instance.getScheduler().runTaskAtLocation(new Location(world, x, 64, z), () -> {
+            Chunk chunk = world.getChunkAt(x, z);
+            future.complete(chunk);
+        });
+
+        return future;
+    }
+
+    private CompletableFuture<List<Chunk>> getChunksAsync(Chunk centerChunk, int radius) {
+        List<CompletableFuture<Chunk>> futures = new ArrayList<>();
+        World world = centerChunk.getWorld();
+
+        for (int x = centerChunk.getX() - radius; x <= centerChunk.getX() + radius; x++) {
+            for (int z = centerChunk.getZ() - radius; z <= centerChunk.getZ() + radius; z++) {
+                futures.add(getChunkAsync(world, x, z));
+            }
+        }
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> futures.stream()
+                        .map(CompletableFuture::join)
+                        .collect(Collectors.toList()));
+    }
+
+    private CompletableFuture<List<Chunk>> getChunks(final Chunk chunkCenter, final int radius) {
+        if (this.surroundingChunks != null && this.surroundingChunks.isDone())
+            return this.surroundingChunks;
+
+        final CompletableFuture<List<Chunk>> future = this.getChunksAsync(chunkCenter, radius);
+
+        if (this.surroundingChunks == null)
+            this.surroundingChunks = future;
+
+        return future;
+    }
+
+    private CompletableFuture<List<Entity>> getEntitiesAsync(final Chunk chunk) {
+        final CompletableFuture<List<Entity>> future = new CompletableFuture<>();
+
+        Main.instance.getScheduler().runTaskAtLocation(this.getChunkMidPoint(chunk, 64), () -> future.complete(Arrays.stream(chunk.getEntities()).collect(Collectors.toList())));
+
+        return future;
+    }
+
+    public CompletableFuture<List<Entity>> getEntitiesAsync() {
+        final Location loc = getLocation();
+        int radius = this.config.getRadius(); // Assuming you have a config object
+
+        if (!Main.isFolia()) {
+            final CompletableFuture<List<Entity>> future = new CompletableFuture<>();
+
+            Main.instance.getScheduler().runTask(() -> future.complete(loc.getWorld().getNearbyEntities(loc, radius, radius / 2, radius).stream().collect(Collectors.toList())));
+
+            return future;
+        }
+
+        Chunk centerChunk = loc.getChunk();
+
+        return getChunks(centerChunk, radius).thenCompose(chunks -> {
+            List<CompletableFuture<List<Entity>>> futures = chunks.stream()
+                    .map(this::getEntitiesAsync)
+                    .collect(Collectors.toList());
+
+            return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .thenApply(v -> futures.stream()
+                            .flatMap(future -> future.join().stream())
+                            .collect(Collectors.toList()));
+        });
+    }
+
+    private Location getChunkMidPoint(final Chunk chunk, final int y) {
+        World world = chunk.getWorld();
+
+        final int midX = (chunk.getX() << 4) + 8;
+        final int midZ = (chunk.getZ() << 4) + 8;
+
+        return new Location(world, midX, y, midZ);
+    }
+
+    private CompletableFuture<Chunk> getChunkAsync() {
+        final CompletableFuture<Chunk> future = new CompletableFuture<>();
+        final Location loc = this.getLocation();
+
+        Main.instance.getScheduler().runTaskAtLocation(loc, () -> future.complete(loc.getChunk()));
+
+        return future;
+    }
+
+    private Chunk getChunk() {
+        if (this.chunk != null)
+            return this.chunk;
+
+        Chunk chunk;
+
+        try {
+            chunk = this.getChunkAsync().get();
+        } catch (final InterruptedException | ExecutionException exception) {
+            exception.printStackTrace();
+            return null;
+        }
+
+        if (this.chunk != null)
+            this.chunk = chunk;
+
+        return chunk;
+    }
+
     @Override
     public void tick() {
-        final Location loc = this.getLocation();
-        final Chunk chunk = loc.getChunk();
+        final Chunk chunk = this.getChunk();
 
         if (!chunk.isLoaded())
             return;
 
-        final int radius = this.config.getRadius();
+        final List<Entity> entities;
 
-        for (Entity entity : loc.getWorld().getNearbyEntities(loc, radius, radius / 2, radius)) {
-            if (!this.pushEntity(entity))
+        try {
+            entities = this.getEntitiesAsync().get();
+        } catch (final ExecutionException | InterruptedException e) {
+            return;
+        }
+
+        if (entities == null)
+            return;
+
+        for (Entity entity : entities) {
+            if (entity == null)
                 continue;
 
-//            final ForceBlock forceBlock = ForceBlockManager.getInstance().getClosestForceBlock(entity.getLocation());
-//
-//            if (forceBlock != null && !forceBlock.equals(this) && !forceBlock.isOff())
-//                continue;
+            Main.instance.getScheduler().runTaskAtEntity(entity, () -> {
+                if (!this.pushEntity(entity))
+                    return;
 
-            final boolean isForceBlockCloser = this.isForceBlockCloser(entity);
+                final boolean isForceBlockCloser = this.isForceBlockCloser(entity);
 
-            if (isForceBlockCloser)
-                continue;
+                if (isForceBlockCloser)
+                    return;
 
-            if (this.allowedAsPermitted(entity) || GeneralConfig.getInstance().getBypassList().contains(entity.getUniqueId()))
-                continue;
+                if (this.allowedAsPermitted(entity) || GeneralConfig.getInstance().getBypassList().contains(entity.getUniqueId()))
+                    return;
 
-            // Deflecting projectiles
-            if (entity instanceof Projectile && this.config.isAffectProjectiles()) {
-                final Projectile projectile = (Projectile) entity;
-                final ProjectileSource source = projectile.getShooter();
+                // Deflecting projectiles
+                if (entity instanceof Projectile && this.config.isAffectProjectiles()) {
+                    final Projectile projectile = (Projectile) entity;
+                    final ProjectileSource source = projectile.getShooter();
 
-                if (source instanceof Player && !this.config.isAffectPlayers())
-                    continue;
+                    if (source instanceof Player && !this.config.isAffectPlayers())
+                        return;
 
-                if (source instanceof Player && this.config.isAffectPlayers()) {
-                    final Player shooter = (Player) source;
-                    final Player originalShooter = Bukkit.getPlayer(this.originalShooterMap.getOrDefault(projectile, shooter.getUniqueId()));
+                    if (source instanceof Player && this.config.isAffectPlayers()) {
+                        final Player shooter = (Player) source;
+                        final Player originalShooter = Bukkit.getPlayer(this.originalShooterMap.getOrDefault(projectile, shooter.getUniqueId()));
 
-                    if (originalShooter != null && this.isPermitted(originalShooter) && !this.config.isAffectTrustedPlayers())
-                        continue;
+                        if (originalShooter != null && this.isPermitted(originalShooter) && !this.config.isAffectTrustedPlayers())
+                            return;
 
-                    final Player owner = Bukkit.getPlayer(this.config.getOwner());
+                        final Player owner = Bukkit.getPlayer(this.config.getOwner());
 
-                    if (owner != null && owner.isOnline() && !shooter.equals(owner) && !(projectile instanceof EnderPearl) && !(projectile instanceof Trident)) {
-                        projectile.setShooter(owner);
-                        this.originalShooterMap.put(projectile, shooter.getUniqueId());
+                        if (owner != null && owner.isOnline() && !shooter.equals(owner) && !(projectile instanceof EnderPearl) && !(projectile instanceof Trident)) {
+                            projectile.setShooter(owner);
+                            this.originalShooterMap.put(projectile, shooter.getUniqueId());
+                        }
+                    }
+
+                    final boolean isNonHostile = source instanceof Mob && !(source instanceof Monster);
+                    final boolean isPlayer = source instanceof Player;
+
+                    if (!isPlayer && isNonHostile && !this.config.isAffectNonHostileMobs())
+                        return;
+
+                    if (!isPlayer && !isNonHostile && !this.config.isAffectHostileMobs())
+                        return;
+                }
+
+                Location location = entity.getLocation();
+                location = location.getBlock().getLocation();
+
+                if (location.distance(this.getLocation()) > this.getConfig().getRadius())
+                    return;
+
+                Entity currentEntity = entity;
+
+                if (currentEntity.isInsideVehicle())
+                    currentEntity = currentEntity.getVehicle();
+
+                switch (this.config.getMode()) {
+                    case MAGNET: {
+                        this.magnet(currentEntity);
+                        break;
+                    }
+
+                    case FORCE_FIELD: {
+                        this.forceField(currentEntity);
+                        break;
+                    }
+
+                    case WHIRLPOOL: {
+                        this.whirlpool(currentEntity);
+                        break;
                     }
                 }
-
-                final boolean isNonHostile = source instanceof Mob && !(source instanceof Monster);
-                final boolean isPlayer = source instanceof Player;
-
-                if (!isPlayer && isNonHostile && !this.config.isAffectNonHostileMobs())
-                    continue;
-
-                if (!isPlayer && !isNonHostile && !this.config.isAffectHostileMobs())
-                    continue;
-            }
-
-            Location location = entity.getLocation();
-            location = location.getBlock().getLocation();
-
-            if (location.distance(this.getLocation()) > this.getConfig().getRadius())
-                continue;
-
-            if (entity.isInsideVehicle())
-                entity = entity.getVehicle();
-
-            switch (this.config.getMode()) {
-                case MAGNET: {
-                    this.magnet(entity);
-                    break;
-                }
-
-                case FORCE_FIELD: {
-                    this.forceField(entity);
-                    break;
-                }
-
-                case WHIRLPOOL: {
-                    this.whirlpool(entity);
-                    break;
-                }
-            }
+            });
         }
+
+        ++this.ticks;
     }
 
     private boolean isOff() {
@@ -387,8 +539,6 @@ public final class ForceBlock implements ForceBlockBase {
         if (this.isOff())
             return;
 
-//        final List<Location> blocks = this.getSphere();
-
         if (this.particlesDisplaying)
             return;
 
@@ -396,21 +546,10 @@ public final class ForceBlock implements ForceBlockBase {
             return;
 
         final Location loc = this.getLocation();
-        final Chunk chunk = loc.getChunk();
+        final Chunk chunk = this.getChunk();
 
         if (!chunk.isLoaded())
             return;
-
-//        if (blocks.isEmpty())
-//            return;
-
-//        Collections.sort(blocks, (loc1, loc2) -> {
-//            if (loc1.getY() != loc2.getY())
-//                return Double.compare(loc1.getY(), loc2.getY());
-//            if (loc1.getBlockX() != loc2.getBlockX())
-//                return Double.compare(loc1.getBlockX(), loc2.getBlockX());
-//            return Double.compare(loc1.getZ(), loc2.getZ());
-//        });
 
         final Particle particle = Particle.HEART;
         final Location center = ForceBlockListeners.center(loc.clone());
@@ -421,7 +560,7 @@ public final class ForceBlock implements ForceBlockBase {
         final int configRadius = this.getConfig().getRadius();
         final int radius = configRadius > MAX_SPHERE_RADIUS ? MAX_SPHERE_RADIUS : configRadius;
 
-        new BukkitRunnable() {
+        new WrappedRunnable() {
             private Location loc = center.clone().add(radius, 0, 0);
 
             @Override
@@ -457,49 +596,11 @@ public final class ForceBlock implements ForceBlockBase {
                     return;
                 }
 
-                this.loc.getWorld().spawnParticle(particle, this.loc, 1);
+                Main.instance.getScheduler().runTaskAtLocation(this.loc, () -> this.loc.getWorld().spawnParticle(particle, this.loc, 1));
             }
-        }.runTaskTimer(Main.instance, 0L, 3L);
+        }.runTaskTimer(Main.instance, 1L, 3L);
 
         this.particlesDisplaying = true;
-
-//        final int loopSize = blocks.size();
-//        final BukkitTask up = new BukkitRunnable() {
-//            int index = 0;
-//
-//            @Override
-//            public void run() {
-//                if (index >= loopSize) {
-//                    super.cancel();
-//                    particleTasks.remove(this);
-//                    return;
-//                }
-//
-//                final Location loc = blocks.get(index);
-//                loc.getWorld().spawnParticle(particle, loc, 1);
-//                index++;
-//            }
-//        }.runTaskTimer(Main.instance, 0, 3);
-//
-//        final BukkitTask down = new BukkitRunnable() {
-//            int index = loopSize - 1;
-//
-//            @Override
-//            public void run() {
-//                if (index < 0) {
-//                    super.cancel();
-//                    particleTasks.remove(this);
-//                    return;
-//                }
-//
-//                final Location loc = blocks.get(index);
-//                loc.getWorld().spawnParticle(particle, loc, 1);
-//                index--;
-//            }
-//        }.runTaskTimer(Main.instance, 0, 3);
-//
-//        this.particleTasks.add(up);
-//        this.particleTasks.add(down);
     }
 
     @Override
@@ -525,19 +626,6 @@ public final class ForceBlock implements ForceBlockBase {
         this.getTrusted().remove(uuid);
         this.save();
     }
-
-//    @Override
-//    public List<Location> getSphere() {
-//        final int configRadius = this.getConfig().getRadius();
-//        final int radius = configRadius > MAX_SPHERE_RADIUS ? MAX_SPHERE_RADIUS : configRadius;
-//
-//        if (this.sphere != null)
-//            return this.sphere;
-//
-//        final Location center = this.getLocation();
-//        final List<Location> sphere = WorldEditUtils.makeSphere(center.getWorld(), center.toVector(), radius);
-//        return this.sphere = sphere;
-//    }
 
     @Override
     public boolean isOwner(final UUID uuid) {
@@ -623,25 +711,7 @@ public final class ForceBlock implements ForceBlockBase {
 
         final double distance = center.distance(nearbyLoc);
 
-        final double maxDistance = 10.0; // Adjust this value based on your preference
-        double strength = PULL_STRENGTH * Math.exp(-distance / maxDistance);
-//
-//        if (distance < 3 * (this.config.getRadius() / 2))
-//            strength *= (1 - Math.pow(distance / maxDistance, 2));
-//        else
-//            strength *= (1 - Math.pow(distance / maxDistance, 2)) / 4; // Gradual increase as it gets closer
-
-        if (!nearby.isOnGround())
-            strength *= 2;
-
-        if (distance < 1.5)
-            strength = 0.2;
-
-        // Ensure strength is always positive
-        strength = Math.abs(strength);
-
-        if (strength < 0.01)
-            strength = 0.01;
+        double strength = getStrength(nearby, distance);
 
         // Calculate direction towards the center of the magnet
         final Vector towardsCenter = center.toVector().subtract(nearbyLoc.toVector());
@@ -659,6 +729,23 @@ public final class ForceBlock implements ForceBlockBase {
         nearby.setVelocity(towardsCenter);
     }
 
+    private static double getStrength(Entity nearby, double distance) {
+        final double maxDistance = 10.0; // Adjust this value based on your preference
+        double strength = PULL_STRENGTH * Math.exp(-distance / maxDistance);
+
+        if (!nearby.isOnGround())
+            strength *= 2;
+
+        if (distance < 1.5)
+            strength = 0.2;
+
+        // Ensure strength is always positive
+        strength = Math.abs(strength);
+
+        if (strength < 0.01)
+            strength = 0.01;
+        return strength;
+    }
 
     @Override
     public void whirlpool(final Entity entity) {

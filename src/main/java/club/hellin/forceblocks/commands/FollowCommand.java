@@ -53,10 +53,9 @@ public final class FollowCommand {
     private static final double SPEED = 0.6;
 
     private final Map<UUID, FollowData> followMap = new HashMap<>(); // Follower -> Following
-//    private final Map<UUID, BukkitTask> taskMap = new HashMap<>(); // Follower -> Task
 
     public FollowCommand() {
-        Bukkit.getScheduler().runTaskTimer(Main.instance, this::performLogic, 60L, 60L);
+        Main.instance.getScheduler().runTaskTimer(this::performLogic, 60L, 60L);
     }
 
     private void performLogic() {
@@ -94,9 +93,8 @@ public final class FollowCommand {
             final Pathfinder pathfinder = Main.instance.getPlayerPathfinder();
             pathfinder.findPath(start, end, new JumpablePathfinderStrategy())
                     .thenAccept(result -> {
-//                            System.out.println("FOUND PATH");
                         final Path path = result.getPath();
-                        final Iterator<PathPosition> iterator = path.getPositions().iterator();
+                        final Iterator<PathPosition> iterator = path.iterator();
 
                         if (shouldCancel)
                             oldTask.cancel();
@@ -128,7 +126,6 @@ public final class FollowCommand {
                                     }
 
                                     follower.setVelocity(velocity);
-//                                        mark(loc);
                                 }
                             }.runTaskTimer(Main.instance, 0L, 2L);
 
@@ -138,11 +135,6 @@ public final class FollowCommand {
                     });
         }
     }
-
-//    private void mark(final Location loc) {
-//        for (final Player p : loc.getWorld().getPlayers())
-//            p.sendBlockChange(loc, Material.YELLOW_STAINED_GLASS.createBlockData());
-//    }
 
     private Location floorLocation(final Location location) {
         return new Location(location.getWorld(), Math.floor(location.getX()), Math.floor(location.getY()), Math.floor(location.getZ()));

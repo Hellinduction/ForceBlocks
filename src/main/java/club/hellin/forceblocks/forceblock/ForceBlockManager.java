@@ -50,19 +50,12 @@ public final class ForceBlockManager extends ComponentManager<ForceBlock> {
     }
 
     private void startSchedulers() {
-        Bukkit.getScheduler().runTaskTimer(Main.instance, () -> {
-            for (final ForceBlock block : super.get())
-                block.everySecond();
-        }, 20L, 20L);
-
-        Bukkit.getScheduler().runTaskTimer(Main.instance, () -> {
-            final List<ForceBlock> blocks = super.get();
-
-            Collections.sort(blocks, Comparator.comparing(block -> block.getConfig().getRadius()));
+        Main.instance.getScheduler().runTaskTimerAsynchronously(() -> {
+            final List<ForceBlock> blocks = new ArrayList<>(super.get());
 
             for (final ForceBlock block : blocks)
-                block.tick();
-        }, 0L, 1L);
+                block.everySecond();
+        }, 20L, 20L);
     }
 
     public List<ForceBlock> getForceBlockWithinRadius(Location location) {

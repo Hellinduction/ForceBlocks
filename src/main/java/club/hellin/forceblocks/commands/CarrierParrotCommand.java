@@ -6,14 +6,17 @@ import club.hellin.forceblocks.utils.GeneralConfig;
 import com.jonahseguin.drink.annotation.Command;
 import com.jonahseguin.drink.annotation.Require;
 import com.jonahseguin.drink.annotation.Sender;
+import me.nahu.scheduler.wrapper.runnable.WrappedRunnable;
 import net.minecraft.server.level.WorldServer;
+import net.minecraft.world.entity.animal.EntityParrot;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_20_R4.CraftWorld;
+import org.bukkit.craftbukkit.v1_20_R4.entity.CraftParrot;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Parrot;
 import org.bukkit.entity.Player;
@@ -23,6 +26,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -117,9 +121,28 @@ public final class CarrierParrotCommand implements Listener {
             parrotEntity.setAdult();
         }
 
-        Bukkit.getScheduler().runTask(Main.instance, () -> parrot.addPassenger(player));
+        Main.instance.getScheduler().runTaskAtEntity(entity, () -> parrot.addPassenger(player));
 
         this.check(entity, loc);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerQuit(final PlayerQuitEvent e) {
+        final Player player = e.getPlayer();
+        final Entity vehicle = player.getVehicle();
+
+        final boolean isParrot = vehicle instanceof Parrot;
+
+        if (!isParrot)
+            return;
+
+        final EntityParrot parrot = ((CraftParrot) vehicle).getHandle();
+        final boolean isCarrierParrot = parrot instanceof EntityCarrierParrot;
+
+        if (!isCarrierParrot)
+            return;
+
+        vehicle.remove();
     }
 
     private Parrot.Variant getRandomVariant() {
@@ -128,20 +151,29 @@ public final class CarrierParrotCommand implements Listener {
     }
 
     private void check(final Entity entity, final Location destination) {
-        new BukkitRunnable() {
+        new WrappedRunnable() {
+            private void end() {
+                entity.remove();
+                super.cancel();
+            }
+
             @Override
             public void run() {
                 if (!entity.isValid() || entity.isDead()) {
-                    super.cancel();
+                    this.end();
                     return;
                 }
 
-                if (entity.getPassengers().isEmpty()) {
-                    entity.remove();
-                    super.cancel();
-                }
+                if (entity.getPassengers().isEmpty())
+                    this.end();
 
                 final Location loc = entity.getLocation();
+
+                if (!loc.getWorld().equals(destination.getWorld())) {
+                    this.end();
+                    return;
+                }
+
                 final double dist = loc.distance(destination);
                 final double lastDist = distanceMap.getOrDefault(entity.getEntityId(), -1D);
 
@@ -157,6 +189,6 @@ public final class CarrierParrotCommand implements Listener {
 
                 entity.eject();
             }
-        }.runTaskTimer(Main.instance, 20L, 20L);
+        }.runTaskTimerAtEntity(Main.instance, entity, 20L, 20L);
     }
 }

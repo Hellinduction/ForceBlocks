@@ -81,9 +81,6 @@ public final class ReachCommand implements Listener {
         while (iterator.hasNext()) {
             final Block block = iterator.next();
 
-//            if (block.getType().isSolid())
-//                break;
-
             for (final Entity entity : block.getWorld().getNearbyEntities(block.getLocation(), 0.32, 0.32, 0.32)) {
                 final double dist = player.getLocation().distance(entity.getLocation());
 
