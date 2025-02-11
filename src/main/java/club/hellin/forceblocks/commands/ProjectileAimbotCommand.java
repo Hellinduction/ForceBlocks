@@ -7,6 +7,12 @@ import club.hellin.forceblocks.utils.GeneralConfig;
 import com.jonahseguin.drink.annotation.Command;
 import com.jonahseguin.drink.annotation.Require;
 import com.jonahseguin.drink.annotation.Sender;
+import de.metaphoriker.pathetic.api.pathing.Pathfinder;
+import de.metaphoriker.pathetic.api.pathing.result.Path;
+import de.metaphoriker.pathetic.api.pathing.result.PathfinderResult;
+import de.metaphoriker.pathetic.api.wrapper.PathPosition;
+import de.metaphoriker.pathetic.bukkit.mapper.BukkitMapper;
+import de.metaphoriker.pathetic.engine.result.PathImpl;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
@@ -23,11 +29,6 @@ import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
-import org.patheloper.api.pathing.Pathfinder;
-import org.patheloper.api.pathing.result.Path;
-import org.patheloper.api.pathing.result.PathfinderResult;
-import org.patheloper.api.wrapper.PathPosition;
-import org.patheloper.mapping.bukkit.BukkitMapper;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -117,11 +118,8 @@ public final class ProjectileAimbotCommand implements Listener {
         if (!config.getProjectileAimbotToggledOn().contains(uuid))
             return;
 
-        if (config.isPathFind()) {
+        if (config.isPathFind())
             projectile.setVelocity(projectile.getVelocity().multiply(0.4));
-//            projectile.setVelocity(new Vector());
-//            projectile.setGravity(false);
-        }
 
         final Entity target = this.getTargetEntity(projectile, shooter);
 
@@ -213,15 +211,8 @@ public final class ProjectileAimbotCommand implements Listener {
             this.indexMap.remove(projectile);
         }
 
-        pathfinder.findPath(start, end, new ArrowPathfinderStrategy(targetLoc))
+        pathfinder.findPath(start, end, Arrays.asList(new ArrowPathfinderStrategy(targetLoc)))
                 .thenAccept(pathfinderResult -> {
-//                    projectile.setGravity(true);
-//                    projectile.setVelocity(originalVelocity.multiply(0.4));
-//                    if (!pathfinderResult.successful()) {
-//                        projectile.remove();
-//                        return;
-//                    }
-
                     resultMap.put(projectile, pathfinderResult);
                     this.indexMap.remove(projectile);
 
@@ -238,7 +229,7 @@ public final class ProjectileAimbotCommand implements Listener {
         final GeneralConfig config = GeneralConfig.getInstance();
 
         final Location nearbyLoc = projectile.getLocation();
-        final Path path = result.getPath();
+        final PathImpl path = (PathImpl) result.getPath();
 
         PathPosition pos;
         final Iterator<PathPosition> iterator = path.getPositions().iterator();
@@ -268,53 +259,8 @@ public final class ProjectileAimbotCommand implements Listener {
         this.indexMap.put(projectile, index + 1);
     }
 
-//    private boolean affect(final Location loc) {
-//        final Block block = loc.getBlock();
-//
-////        if (block.getRelative(BlockFace.DOWN).getType().isSolid())
-////            return true;
-////        else if (block.getRelative(BlockFace.UP).getType().isSolid())
-////            return true;
-//        if (block.getRelative(BlockFace.NORTH).getType().isSolid())
-//            return true;
-//        else if (block.getRelative(BlockFace.EAST).getType().isSolid())
-//            return true;
-//        else if (block.getRelative(BlockFace.SOUTH).getType().isSolid())
-//            return true;
-//        else if (block.getRelative(BlockFace.WEST).getType().isSolid())
-//            return true;
-//
-//        return false;
-//    }
-
     private void handle(Location loc, final Location nearbyLoc, double speed, final Projectile projectile) {
         loc = ForceBlockListeners.center(loc);
-//        final boolean affected = this.affect(loc);
-//
-//        System.out.println(affected);
-//
-//        if (affected) {
-//            final List<Block> blocks = new ArrayList<>();
-//
-//            blocks.add(block.getRelative(BlockFace.DOWN));
-//            blocks.add(block.getRelative(BlockFace.UP));
-//            blocks.add(block.getRelative(BlockFace.NORTH));
-//            blocks.add(block.getRelative(BlockFace.EAST));
-//            blocks.add(block.getRelative(BlockFace.SOUTH));
-//            blocks.add(block.getRelative(BlockFace.WEST));
-//
-//            Block found = null;
-//
-//            for (final Block b : blocks) {
-//                if (!b.getType().isSolid()) {
-//                    found = b;
-//                    break;
-//                }
-//            }
-//
-//             if (found != null)
-//                 loc = found.getLocation();
-//        }
 
         final Vector direction = loc.toVector().subtract(nearbyLoc.toVector()).normalize();
         final Vector velocity = direction.multiply(speed);
@@ -327,11 +273,6 @@ public final class ProjectileAimbotCommand implements Listener {
 
         projectile.setVelocity(velocity);
     }
-
-//    private void mark(final Location loc) {
-//        for (final Player p : loc.getWorld().getPlayers())
-//            p.sendBlockChange(loc, Material.YELLOW_STAINED_GLASS.createBlockData());
-//    }
 
     private <T> T getElementAtIndex(final Iterator<T> iterator, final int index) {
         if (index < 0) {

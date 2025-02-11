@@ -4,6 +4,10 @@ import club.hellin.forceblocks.Main;
 import com.jonahseguin.drink.annotation.Command;
 import com.jonahseguin.drink.annotation.Require;
 import com.jonahseguin.drink.annotation.Sender;
+import de.metaphoriker.pathetic.api.pathing.Pathfinder;
+import de.metaphoriker.pathetic.api.wrapper.PathPosition;
+import de.metaphoriker.pathetic.bukkit.mapper.BukkitMapper;
+import de.metaphoriker.pathetic.engine.result.PathImpl;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Bukkit;
@@ -15,16 +19,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
-import org.patheloper.api.pathing.Pathfinder;
-import org.patheloper.api.pathing.result.Path;
-import org.patheloper.api.pathing.strategy.strategies.JumpablePathfinderStrategy;
-import org.patheloper.api.wrapper.PathPosition;
-import org.patheloper.mapping.bukkit.BukkitMapper;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Predicate;
 
 public final class FollowCommand {
@@ -53,7 +49,6 @@ public final class FollowCommand {
     private static final double SPEED = 0.6;
 
     private final Map<UUID, FollowData> followMap = new HashMap<>(); // Follower -> Following
-//    private final Map<UUID, BukkitTask> taskMap = new HashMap<>(); // Follower -> Task
 
     public FollowCommand() {
         Bukkit.getScheduler().runTaskTimer(Main.instance, this::performLogic, 60L, 60L);
@@ -92,10 +87,9 @@ public final class FollowCommand {
             final PathPosition end = BukkitMapper.toPathPosition(target);
 
             final Pathfinder pathfinder = Main.instance.getPlayerPathfinder();
-            pathfinder.findPath(start, end, new JumpablePathfinderStrategy())
+            pathfinder.findPath(start, end, Collections.emptyList())
                     .thenAccept(result -> {
-//                            System.out.println("FOUND PATH");
-                        final Path path = result.getPath();
+                        final PathImpl path = (PathImpl) result.getPath();
                         final Iterator<PathPosition> iterator = path.getPositions().iterator();
 
                         if (shouldCancel)
@@ -128,7 +122,6 @@ public final class FollowCommand {
                                     }
 
                                     follower.setVelocity(velocity);
-//                                        mark(loc);
                                 }
                             }.runTaskTimer(Main.instance, 0L, 2L);
 
@@ -138,11 +131,6 @@ public final class FollowCommand {
                     });
         }
     }
-
-//    private void mark(final Location loc) {
-//        for (final Player p : loc.getWorld().getPlayers())
-//            p.sendBlockChange(loc, Material.YELLOW_STAINED_GLASS.createBlockData());
-//    }
 
     private Location floorLocation(final Location location) {
         return new Location(location.getWorld(), Math.floor(location.getX()), Math.floor(location.getY()), Math.floor(location.getZ()));

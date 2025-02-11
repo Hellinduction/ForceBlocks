@@ -8,6 +8,7 @@ buildscript {
 plugins {
     id 'java'
     id("io.github.goooler.shadow") version "8.1.7"
+    id("io.papermc.paperweight.userdev") version "1.7.5"
 }
 
 apply plugin: 'java'
@@ -19,8 +20,8 @@ repositories {
     mavenCentral()
     mavenLocal()
     maven {
-        name = "spigotmc-repo"
-        url = "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
+        name = "papermc-repo"
+        url = "https://repo.papermc.io/repository/maven-public/"
     }
     maven {
         name = "sonatype"
@@ -37,12 +38,11 @@ repositories {
 }
 
 dependencies {
-    compileOnly "org.spigotmc:spigot-api:1.20-R0.1-SNAPSHOT"
-    compileOnly "org.spigotmc:spigot:1.20.4-R0.1-SNAPSHOT"
+    compileOnly("io.papermc.paper:paper-api:1.20.6-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("1.20.6-R0.1-SNAPSHOT")
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
-    implementation "de.tr7zw:item-nbt-api:2.12.4"
-//    implementation files("C:\\Users\\josep\\Desktop\\Minigames\\Item-NBT-API\\item-nbt-api\\target\\item-nbt-api-2.12.4-SNAPSHOT.jar")
+    implementation "de.tr7zw:item-nbt-api:2.14.1"
     implementation files("C:\\Users\\josep\\Desktop\\Minigames\\drink\\target\\drink-1.0.5-shaded.jar")
     implementation "com.github.Exlll.ConfigLib:configlib-core:v4.2.0"
     implementation "com.github.Exlll.ConfigLib:configlib-paper:v4.2.0"
@@ -50,7 +50,7 @@ dependencies {
     compileOnly "com.github.decentsoftware-eu:decentholograms:2.8.6"
     implementation group: 'org.json', name: 'json', version: '20240303'
     compileOnly 'me.clip:placeholderapi:2.11.4'
-    implementation 'com.github.patheloper.pathetic:pathetic-mapping:2.4.2'
+    implementation 'com.github.Metaphoriker.pathetic:pathetic-bukkit:4.0.1'
     implementation "commons-codec:commons-codec:1.15"
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.14.1'
 }
@@ -85,4 +85,8 @@ processResources {
     filesMatching('plugin.yml') {
         expand props
     }
+}
+
+tasks.assemble {
+    dependsOn(tasks.reobfJar)  // Ensure reobfJar runs during the build process
 }

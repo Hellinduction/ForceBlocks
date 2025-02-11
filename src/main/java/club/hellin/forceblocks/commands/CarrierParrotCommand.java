@@ -6,14 +6,14 @@ import club.hellin.forceblocks.utils.GeneralConfig;
 import com.jonahseguin.drink.annotation.Command;
 import com.jonahseguin.drink.annotation.Require;
 import com.jonahseguin.drink.annotation.Sender;
-import net.minecraft.server.level.WorldServer;
+import net.minecraft.server.level.ServerLevel;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
+import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Parrot;
 import org.bukkit.entity.Player;
@@ -102,7 +102,7 @@ public final class CarrierParrotCommand implements Listener {
         final Location toTeleportTo = player.getLocation().clone().add(0, 2.5, 0);
         final Location loc = block.getLocation();
         final EntityCarrierParrot parrot = new EntityCarrierParrot(toTeleportTo, loc);
-        final WorldServer world = ((CraftWorld) player.getWorld()).getHandle();
+        final ServerLevel world = ((CraftWorld) player.getWorld()).getHandle();
 
         parrot.init();
         world.addFreshEntity(parrot, CreatureSpawnEvent.SpawnReason.COMMAND);

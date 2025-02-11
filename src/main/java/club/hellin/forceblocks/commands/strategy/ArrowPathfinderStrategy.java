@@ -1,15 +1,14 @@
 package club.hellin.forceblocks.commands.strategy;
 
+import de.metaphoriker.pathetic.api.pathing.filter.PathFilter;
+import de.metaphoriker.pathetic.api.pathing.filter.PathValidationContext;
+import de.metaphoriker.pathetic.api.wrapper.PathPosition;
+import de.metaphoriker.pathetic.bukkit.mapper.BukkitMapper;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
-import org.patheloper.api.pathing.strategy.PathValidationContext;
-import org.patheloper.api.pathing.strategy.PathfinderStrategy;
-import org.patheloper.api.snapshot.SnapshotManager;
-import org.patheloper.api.wrapper.PathBlock;
-import org.patheloper.mapping.bukkit.BukkitMapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,57 +16,50 @@ import java.util.List;
 
 @Getter
 @AllArgsConstructor
-public final class ArrowPathfinderStrategy implements PathfinderStrategy {
+public final class ArrowPathfinderStrategy implements PathFilter {
     private final Location target;
 
     @Override
-    public boolean isValid(@NonNull PathValidationContext pathValidationContext) {
+    public boolean filter(@NonNull PathValidationContext pathValidationContext) {
         if (pathValidationContext == null) {
             throw new NullPointerException("pathValidationContext is marked non-null but is null");
         } else {
-            final SnapshotManager manager = pathValidationContext.getSnapshotManager();
+            final PathPosition block = pathValidationContext.getPosition();
 
-            final PathBlock block = manager.getBlock(pathValidationContext.getPosition());
+            final PathPosition above = pathValidationContext.getPosition().clone().add(0, 1, 0);
+            final PathPosition aboveAbove = pathValidationContext.getPosition().clone().add(0, 2, 0);
+            final PathPosition below = pathValidationContext.getPosition().clone().subtract(0, 1, 0);
 
-            final PathBlock above = manager.getBlock(pathValidationContext.getPosition().clone().add(0, 1, 0));
-            final PathBlock aboveAbove = manager.getBlock(pathValidationContext.getPosition().clone().add(0, 2, 0));
-            final PathBlock below = manager.getBlock(pathValidationContext.getPosition().clone().subtract(0, 1, 0));
-
-            final Block aboveBlock = BukkitMapper.toBlock(above);
-            final Block belowBlock = BukkitMapper.toBlock(below);
+            final Block aboveBlock = BukkitMapper.toLocation(above).getBlock();
+            final Block belowBlock = BukkitMapper.toLocation(below).getBlock();
 
             if (Arrays.asList(aboveBlock, belowBlock).stream().anyMatch(b -> b.getType().name().contains("LANTERN")))
-                return block.isPassable();
+                return BukkitMapper.toLocation(block).getBlock().isPassable();
 
             final List<Block> blocks = new ArrayList<>(Arrays.asList(
-//                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(1, 0, 0))),
-//                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(0, 0, 1))),
-//                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(-1, 0, 0))),
-//                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(0, 0, -1))),
-
-                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(1, 0, 1))),
-                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(-1, 0, -1))),
-                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(-1, 0, 1))),
-                    BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(1, 0, -1)))
+                    BukkitMapper.toLocation(pathValidationContext.getPosition().clone().add(1, 0, 1)).getBlock(),
+                    BukkitMapper.toLocation(pathValidationContext.getPosition().clone().add(-1, 0, -1)).getBlock(),
+                    BukkitMapper.toLocation(pathValidationContext.getPosition().clone().add(-1, 0, 1)).getBlock(),
+                    BukkitMapper.toLocation(pathValidationContext.getPosition().clone().add(1, 0, -1)).getBlock()
             ));
 
             if (!this.target.clone().subtract(0, -1, 0).getBlock().getType().isSolid()) {
                 blocks.addAll(
                         Arrays.asList(
-                                BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(1, -1, 1))),
-                                BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(-1, -1, -1))),
-                                BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(-1, -1, 1))),
-                                BukkitMapper.toBlock(manager.getBlock(pathValidationContext.getPosition().clone().add(1, -1, -1)))
+                                BukkitMapper.toLocation(pathValidationContext.getPosition().clone().add(1, -1, 1)).getBlock(),
+                                BukkitMapper.toLocation(pathValidationContext.getPosition().clone().add(-1, -1, -1)).getBlock(),
+                                BukkitMapper.toLocation(pathValidationContext.getPosition().clone().add(-1, -1, 1)).getBlock(),
+                                BukkitMapper.toLocation(pathValidationContext.getPosition().clone().add(1, -1, -1)).getBlock()
                         )
                 );
             }
 
-            final boolean isDoorway = !aboveBlock.isPassable() || !belowBlock.isPassable() || !aboveAbove.isPassable();
+            final boolean isDoorway = !aboveBlock.isPassable() || !belowBlock.isPassable() || !BukkitMapper.toLocation(aboveAbove).getBlock().isPassable();
 
             if (blocks.stream().filter(b -> b.getType().isSolid()).count() >= 2 && !isDoorway)
                 return false;
 
-            return block.isPassable() && above.isPassable() && below.isPassable();
+            return BukkitMapper.toLocation(block).getBlock().isPassable() && BukkitMapper.toLocation(above).getBlock().isPassable() && BukkitMapper.toLocation(below).getBlock().isPassable();
         }
     }
 }

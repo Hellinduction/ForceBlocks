@@ -99,7 +99,10 @@ public final class ItemStackBuilder {
         final ItemMeta meta = this.getMeta();
         metaConsumer.accept(meta);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        meta.addItemFlags(ItemFlag.HIDE_DESTROYS);
+
+        if (this.item.getType().getMaxDurability() > 0)
+            meta.addItemFlags(ItemFlag.HIDE_DESTROYS);
+
         this.item.setItemMeta(meta);
 
         return this;
