@@ -25,6 +25,7 @@ import org.bukkit.util.Vector;
 
 import java.io.File;
 import java.util.*;
+import java.util.function.Predicate;
 
 @Getter
 @ToString
@@ -273,6 +274,10 @@ public final class ForceBlock implements ForceBlockBase {
         final boolean isOwner = this.isOwner(uuid);
         final boolean affectOwner = this.config.isAffectOwner();
         final boolean affectedTrusted = this.config.isAffectTrustedPlayers();
+        final boolean players = this.config.isAffectPlayers();
+
+        if (entity instanceof Player && !players)
+            return true;
 
         if (isOwner) {
             if (!affectOwner)
@@ -314,7 +319,13 @@ public final class ForceBlock implements ForceBlockBase {
             if (isForceBlockCloser)
                 continue;
 
-            if (this.allowedAsPermitted(entity) || GeneralConfig.getInstance().getBypassList().contains(entity.getUniqueId()))
+            final Predicate<Entity> permittedPredicate = e -> this.allowedAsPermitted(e) || GeneralConfig.getInstance().getBypassList().contains(e.getUniqueId());
+            final boolean permitted = permittedPredicate.test(entity);
+
+            if (permitted)
+                continue;
+
+            if (entity instanceof Vehicle && !entity.getPassengers().isEmpty() && entity.getPassengers().stream().anyMatch(e -> e instanceof Player && permittedPredicate.test(e)))
                 continue;
 
             // Deflecting projectiles
