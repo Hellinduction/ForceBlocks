@@ -106,8 +106,9 @@ public final class ForceBlock implements ForceBlockBase {
         final String name = this.getHologramName(loc);
         final OfflinePlayer owner = Bukkit.getOfflinePlayer(this.config.getOwner());
 
-        final Hologram hologram = DHAPI.createHologram(name, loc, Arrays.asList(ChatColor.translateAlternateColorCodes('&', String.format("&e%s&b%s Force Block", owner.getName(), owner.getName().toLowerCase().endsWith("s") ? "'" : "'s")),
+        final Hologram hologram = DHAPI.createHologram(name, loc, false, Arrays.asList(ChatColor.translateAlternateColorCodes('&', String.format("&e%s&b%s Force Block", owner.getName(), owner.getName().toLowerCase().endsWith("s") ? "'" : "'s")),
                 ChatColor.translateAlternateColorCodes('&', String.format("&bMode:&e %%forceblocks_mode_%s%%", convertLocationToFileName(this.config.getLocation())))));
+
         return hologram;
     }
 
