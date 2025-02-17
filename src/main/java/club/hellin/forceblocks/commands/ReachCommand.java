@@ -1,6 +1,7 @@
 package club.hellin.forceblocks.commands;
 
 import club.hellin.forceblocks.Main;
+import club.hellin.forceblocks.listeners.ForceBlockListeners;
 import club.hellin.forceblocks.utils.GeneralConfig;
 import com.jonahseguin.drink.annotation.Command;
 import com.jonahseguin.drink.annotation.OptArg;
@@ -8,6 +9,7 @@ import com.jonahseguin.drink.annotation.Require;
 import com.jonahseguin.drink.annotation.Sender;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
@@ -80,11 +82,9 @@ public final class ReachCommand implements Listener {
         final BlockIterator iterator = new BlockIterator(player, 180);
         while (iterator.hasNext()) {
             final Block block = iterator.next();
+            final Location loc = ForceBlockListeners.center(block.getLocation());
 
-//            if (block.getType().isSolid())
-//                break;
-
-            for (final Entity entity : block.getWorld().getNearbyEntities(block.getLocation(), 0.32, 0.32, 0.32)) {
+            for (final Entity entity : block.getWorld().getNearbyEntities(loc, 0.32, 0.32, 0.32)) {
                 final double dist = player.getLocation().distance(entity.getLocation());
 
                 if (entity instanceof LivingEntity && dist > DEFAULT_REACH && dist < reach) {
