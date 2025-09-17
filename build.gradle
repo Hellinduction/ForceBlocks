@@ -42,14 +42,14 @@ dependencies {
     paperweight.paperDevBundle("1.20.6-R0.1-SNAPSHOT")
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
-    implementation "de.tr7zw:item-nbt-api:2.14.1"
+    implementation "de.tr7zw:item-nbt-api:2.15.2"
     implementation files("C:\\Users\\josep\\Desktop\\Minigames\\drink\\target\\drink-1.0.5-shaded.jar")
     implementation "com.github.Exlll.ConfigLib:configlib-core:v4.2.0"
     implementation "com.github.Exlll.ConfigLib:configlib-paper:v4.2.0"
     implementation "com.github.Exlll.ConfigLib:configlib-yaml:v4.2.0"
     compileOnly "com.github.decentsoftware-eu:decentholograms:2.8.13"
     implementation group: 'org.json', name: 'json', version: '20240303'
-    compileOnly 'me.clip:placeholderapi:2.11.4'
+    compileOnly 'me.clip:placeholderapi:2.11.6'
     implementation 'com.github.Metaphoriker.pathetic:pathetic-bukkit:4.0.1'
     implementation "commons-codec:commons-codec:1.15"
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.14.1'
