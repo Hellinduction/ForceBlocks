@@ -96,7 +96,7 @@ public final class Main extends JavaPlugin {
         service.register(new ReachCommand(), "reach");
         service.register(new BypassForceBlockCommand(), "bypassforceblock");
 
-        if (isPaper())
+        if (isPaper() && classExists("net.minecraft.world.entity.animal.parrot.Parrot"))
             service.register(new CarrierParrotCommand(), "carrierparrot");
 
 //        service.register(new OpenInventoryCommand(), "openinventory");
@@ -104,14 +104,18 @@ public final class Main extends JavaPlugin {
         service.registerCommands();
     }
 
-    public static boolean isPaper() {
-        boolean isPaper = false;
+    private static boolean classExists(final String name) {
+        boolean exists = false;
 
         try {
-            Class.forName("io.papermc.paper.plugin.manager.PaperPluginManagerImpl");
-            isPaper = true;
+            Class.forName(name);
+            exists = true;
         } catch (final Throwable throwable) {}
 
-        return isPaper;
+        return exists;
+    }
+
+    public static boolean isPaper() {
+        return classExists("io.papermc.paper.plugin.manager.PaperPluginManagerImpl");
     }
 }
