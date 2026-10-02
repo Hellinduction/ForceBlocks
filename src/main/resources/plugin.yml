@@ -9,4 +9,5 @@ authors:
 
 softdepend:
   - DecentHolograms
+  - FancyHolograms
   - PlaceholderAPI

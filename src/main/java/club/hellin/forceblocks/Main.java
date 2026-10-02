@@ -1,6 +1,7 @@
 package club.hellin.forceblocks;
 
 import club.hellin.forceblocks.commands.*;
+import club.hellin.forceblocks.customentities.ParrotCompat;
 import club.hellin.forceblocks.forceblock.ForceBlockManager;
 import club.hellin.forceblocks.inventory.InventoryManager;
 import club.hellin.forceblocks.listeners.ForceBlockListeners;
@@ -96,7 +97,7 @@ public final class Main extends JavaPlugin {
         service.register(new ReachCommand(), "reach");
         service.register(new BypassForceBlockCommand(), "bypassforceblock");
 
-        if (isPaper() && classExists("net.minecraft.world.entity.animal.parrot.Parrot"))
+        if (isPaper() && classExists("net.minecraft.world.entity.animal.parrot.Parrot") && ParrotCompat.getParrotEntityType() != null)
             service.register(new CarrierParrotCommand(), "carrierparrot");
 
 //        service.register(new OpenInventoryCommand(), "openinventory");

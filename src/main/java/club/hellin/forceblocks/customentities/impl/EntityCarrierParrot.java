@@ -1,5 +1,6 @@
 package club.hellin.forceblocks.customentities.impl;
 
+import club.hellin.forceblocks.customentities.ParrotCompat;
 import club.hellin.forceblocks.customentities.goals.PathfinderGoalWalkToTile;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -13,8 +14,9 @@ import org.bukkit.entity.Player;
 public final class EntityCarrierParrot extends Parrot {
     private final Location target;
 
+    @SuppressWarnings("unchecked")
     public EntityCarrierParrot(final Location loc, final Location target) {
-        super(EntityType.PARROT, ((CraftWorld) loc.getWorld()).getHandle());
+        super((EntityType<? extends Parrot>) ParrotCompat.getParrotEntityType(), ((CraftWorld) loc.getWorld()).getHandle());
 
         this.target = target;
 

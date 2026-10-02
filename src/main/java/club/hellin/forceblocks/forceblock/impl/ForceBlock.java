@@ -3,14 +3,14 @@ package club.hellin.forceblocks.forceblock.impl;
 import club.hellin.forceblocks.Main;
 import club.hellin.forceblocks.forceblock.ForceBlockBase;
 import club.hellin.forceblocks.forceblock.ForceBlockManager;
+import club.hellin.forceblocks.hologram.ForceBlockHologram;
+import club.hellin.forceblocks.hologram.Holograms;
 import club.hellin.forceblocks.inventory.AbstractInventory;
 import club.hellin.forceblocks.inventory.InventoryManager;
 import club.hellin.forceblocks.inventory.impl.ForceBlockInventory;
 import club.hellin.forceblocks.listeners.ForceBlockListeners;
 import club.hellin.forceblocks.utils.GeneralConfig;
 import de.exlll.configlib.YamlConfigurations;
-import eu.decentsoftware.holograms.api.DHAPI;
-import eu.decentsoftware.holograms.api.holograms.Hologram;
 import lombok.Getter;
 import lombok.ToString;
 import org.apache.commons.codec.binary.Base32;
@@ -46,7 +46,7 @@ public final class ForceBlock implements ForceBlockBase {
 
 //    private @ToString.Exclude List<Location> sphere;
     private long second = 0;
-    private Hologram hologram;
+    private ForceBlockHologram hologram;
 //    private List<BukkitTask> particleTasks = new ArrayList<>();
     private boolean particlesDisplaying; // Used to check if particles from previous BukkitRunnable are still being displayed
     private boolean deleted;
@@ -84,7 +84,7 @@ public final class ForceBlock implements ForceBlockBase {
         ForceBlockManager.getInstance().register(this);
     }
 
-    private Hologram spawnHologram() {
+    private ForceBlockHologram spawnHologram() {
         if (!this.config.isDisplayHologram())
             return null;
 
@@ -93,23 +93,14 @@ public final class ForceBlock implements ForceBlockBase {
         loc = loc.clone().add(0, 2, 0);
         loc = ForceBlockListeners.center(loc);
 
-        final String name = this.getHologramName(loc);
-        final Hologram hologram = DHAPI.getHologram(name);
-
-        if (hologram != null)
-            return hologram;
-
-        return this.createHologram(loc);
-    }
-
-    private Hologram createHologram(final Location loc) {
-        final String name = this.getHologramName(loc);
         final OfflinePlayer owner = Bukkit.getOfflinePlayer(this.config.getOwner());
+        final String ownerName = owner.getName() == null ? "Unknown" : owner.getName();
+        final List<String> lines = Arrays.asList(
+                String.format("&e%s&b%s Force Block", ownerName, ownerName.toLowerCase().endsWith("s") ? "'" : "'s"),
+                String.format("&bMode:&e %%forceblocks_mode_%s%%", convertLocationToFileName(this.config.getLocation()))
+        );
 
-        final Hologram hologram = DHAPI.createHologram(name, loc, false, Arrays.asList(ChatColor.translateAlternateColorCodes('&', String.format("&e%s&b%s Force Block", owner.getName(), owner.getName().toLowerCase().endsWith("s") ? "'" : "'s")),
-                ChatColor.translateAlternateColorCodes('&', String.format("&bMode:&e %%forceblocks_mode_%s%%", convertLocationToFileName(this.config.getLocation())))));
-
-        return hologram;
+        return Holograms.getOrCreate(this.getHologramName(loc), loc, lines);
     }
 
     private String getHologramName(final Location loc) {
@@ -150,8 +141,8 @@ public final class ForceBlock implements ForceBlockBase {
 
     public void deleteHologram() {
         if (this.hologram != null) {
-            this.hologram.hideAll();
             this.hologram.delete();
+            this.hologram = null;
         }
     }
 

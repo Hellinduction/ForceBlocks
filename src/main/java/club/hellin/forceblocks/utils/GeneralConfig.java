@@ -40,6 +40,9 @@ public final class GeneralConfig {
     @Comment("Weather or not the Projectile Aimbot should path find")
     private boolean pathFind = false;
 
+    @Comment({"Which hologram plugin to use for Force Block holograms", "Options: auto, DecentHolograms, FancyHolograms, none"})
+    private String hologramPlugin = "auto";
+
     private static File getConfigFile() {
         return new File(Main.instance.getDataFolder(), "config.yml");
     }
